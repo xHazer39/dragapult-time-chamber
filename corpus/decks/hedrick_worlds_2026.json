@@ -1,0 +1,148 @@
+{
+  "deck_name": "Dragapult (Andrew Hedrick, 1st place, Pokémon World Championships 2026)",
+  "role": "REFERENCE_DECK",
+  "event": "Pokémon World Championships 2026, TCG Masters",
+  "event_date": "2026-08-28 (tournament start date on Limitless)",
+  "players": 797,
+  "format": "Standard 2026 (H, I, J regulation marks legal from 2026-04-10)",
+  "cards": [
+    {
+      "count": 4,
+      "name": "Dreepy",
+      "reference_print": "TWM 128"
+    },
+    {
+      "count": 4,
+      "name": "Drakloak",
+      "reference_print": "TWM 129"
+    },
+    {
+      "count": 3,
+      "name": "Dragapult ex",
+      "reference_print": "TWM 130"
+    },
+    {
+      "count": 2,
+      "name": "Munkidori",
+      "reference_print": "TWM 95"
+    },
+    {
+      "count": 2,
+      "name": "Budew",
+      "reference_print": "ASC 16"
+    },
+    {
+      "count": 1,
+      "name": "Dunsparce",
+      "reference_print": "JTG 120"
+    },
+    {
+      "count": 1,
+      "name": "Dudunsparce",
+      "reference_print": "TEF 129"
+    },
+    {
+      "count": 1,
+      "name": "Meowth ex",
+      "reference_print": "POR 62"
+    },
+    {
+      "count": 1,
+      "name": "Fezandipiti ex",
+      "reference_print": "ASC 142"
+    },
+    {
+      "count": 4,
+      "name": "Lillie's Determination",
+      "reference_print": "MEG 119"
+    },
+    {
+      "count": 3,
+      "name": "Boss's Orders",
+      "reference_print": "MEG 114"
+    },
+    {
+      "count": 2,
+      "name": "Crispin",
+      "reference_print": "SCR 133"
+    },
+    {
+      "count": 1,
+      "name": "Rosa's Encouragement",
+      "reference_print": "POR 84"
+    },
+    {
+      "count": 4,
+      "name": "Poké Pad",
+      "reference_print": "POR 81"
+    },
+    {
+      "count": 4,
+      "name": "Crushing Hammer",
+      "reference_print": "POR 71"
+    },
+    {
+      "count": 4,
+      "name": "Buddy-Buddy Poffin",
+      "reference_print": "TEF 144"
+    },
+    {
+      "count": 3,
+      "name": "Night Stretcher",
+      "reference_print": "ASC 196"
+    },
+    {
+      "count": 3,
+      "name": "Ultra Ball",
+      "reference_print": "MEG 131"
+    },
+    {
+      "count": 1,
+      "name": "Unfair Stamp",
+      "reference_print": "TWM 165"
+    },
+    {
+      "count": 1,
+      "name": "Special Red Card",
+      "reference_print": "CRI 82"
+    },
+    {
+      "count": 2,
+      "name": "Risky Ruins",
+      "reference_print": "MEG 127"
+    },
+    {
+      "count": 3,
+      "name": "Basic Fire Energy",
+      "reference_print": "MEE 2"
+    },
+    {
+      "count": 3,
+      "name": "Basic Darkness Energy",
+      "reference_print": "MEE 7"
+    },
+    {
+      "count": 3,
+      "name": "Basic Psychic Energy",
+      "reference_print": "MEE 5"
+    }
+  ],
+  "total": 60,
+  "hash_sha256_name_count": "38bfd811b4a3f8b6fcfbdaa8b4f6bdd4cb8b37599c45c5c721b3f71c8686fcda",
+  "hash_note": "sha256 of sorted \"count name\" lines; prints excluded because reprints are functionally identical",
+  "provenance": {
+    "source": "Limitless TCG tournament decklist",
+    "urls": [
+      "https://limitlesstcg.com/decks/list/28752",
+      "https://limitlesstcg.com/tournaments/515"
+    ],
+    "retrieved_at": "2026-09-19T21:23:11+00:00",
+    "print_note": "reference_print = the print Limitless links for each card on the list page; the physical prints Hedrick registered are not shown",
+    "official_decklist": "NOT_FOUND: no official Play! Pokémon published decklist was retrieved; Limitless is the source"
+  },
+  "format_source": {
+    "url": "https://www.pokemon.com/us/pokemon-news/2026-pokemon-tcg-standard-format-rotation-announcement",
+    "published": "2026-01-09",
+    "retrieved_at": "2026-09-19T21:23:11+00:00"
+  }
+}

@@ -1,0 +1,278 @@
+{
+  "generated_at": "2026-09-19T23:08:08+00:00",
+  "concepts": [
+    {
+      "id": "budew_lock_war",
+      "name": "Budew item-lock war",
+      "definition": "In the mirror the early game is a fight over which Budew survives and which player is item-locked; keeping your own Budew alive (healing it with Munkidori) while Knocking Out theirs decides who develops first.",
+      "primary_skill": "board_bench_discipline",
+      "contexts": [
+        "dragapult_mirror",
+        "early_game"
+      ],
+      "supporting_claim_ids": [
+        "claim_eeHvbC8bpXQ_8",
+        "claim_eeHvbC8bpXQ_7",
+        "claim_eeHvbC8bpXQ_14"
+      ],
+      "source_count": 1,
+      "evidence_summary": "Hedrick states the Budew war is 'so so important' in the mirror and explains the third Darkness Energy and the Risky Ruins turn-1 line as ways to win it.",
+      "confidence": "medium",
+      "open_questions": [
+        "How does this change on the draw versus on the play?",
+        "Which line wins if both players hold Budew?"
+      ],
+      "created_at": "2026-09-19T23:08:08+00:00"
+    },
+    {
+      "id": "delay_engagement_until_ready",
+      "name": "Do not engage before the board is ready",
+      "definition": "Attacking first with an underdeveloped board hands the opponent a Crushing Hammer / Unfair Stamp comeback window; bank spread damage and complete your board before committing.",
+      "primary_skill": "planning",
+      "contexts": [
+        "dragapult_mirror",
+        "mid_game"
+      ],
+      "supporting_claim_ids": [
+        "claim_eeHvbC8bpXQ_2",
+        "claim_eeHvbC8bpXQ_9"
+      ],
+      "source_count": 1,
+      "evidence_summary": "Stated directly twice by Hedrick for the mirror.",
+      "confidence": "medium",
+      "open_questions": [
+        "What board counts as 'ready'? No explicit checklist in the source."
+      ],
+      "created_at": "2026-09-19T23:08:08+00:00"
+    },
+    {
+      "id": "risky_ruins_damage_loop",
+      "name": "Risky Ruins + Dunsparce + Munkidori damage loop",
+      "definition": "Benching a Basic non-Darkness Pokémon under your own Risky Ruins puts 20 damage on it, which Munkidori can then move onto the opponent's board each turn: a repeatable damage source that does not need an attack.",
+      "primary_skill": "damage_allocation",
+      "contexts": [
+        "dragapult_mirror",
+        "alakazam_rabsca",
+        "mid_game"
+      ],
+      "supporting_claim_ids": [
+        "claim_eeHvbC8bpXQ_1",
+        "claim_eeHvbC8bpXQ_3",
+        "claim_eeHvbC8bpXQ_10"
+      ],
+      "source_count": 1,
+      "evidence_summary": "Explained mechanically by Hedrick; card texts in facts/cards.jsonl confirm the interaction is legal.",
+      "confidence": "medium",
+      "open_questions": [
+        "How much does this depend on the opponent having no Stadium of their own?"
+      ],
+      "created_at": "2026-09-19T23:08:08+00:00"
+    },
+    {
+      "id": "attack_when_no_response_ko",
+      "name": "Attack when the opponent cannot answer with a Knock Out",
+      "definition": "The aggressive turn is correct when the opponent, on their next turn, cannot Knock Out your attacker: count their Energy in play, their attackers and their outs before committing.",
+      "primary_skill": "opponent_modeling",
+      "contexts": [
+        "zoroark",
+        "alakazam",
+        "mid_game"
+      ],
+      "supporting_claim_ids": [
+        "claim_eeHvbC8bpXQ_11",
+        "claim_eeHvbC8bpXQ_26",
+        "claim_OcmjWWv-daQ_30"
+      ],
+      "source_count": 2,
+      "evidence_summary": "Hedrick states it as the main way to beat Zoroark; Farah applies the same reasoning to the Worlds final turn 2.",
+      "confidence": "medium",
+      "open_questions": [
+        "Where is the line between this and 'do not engage underdeveloped'? The two claims constrain each other."
+      ],
+      "created_at": "2026-09-19T23:08:08+00:00"
+    },
+    {
+      "id": "check_opponent_counterplay",
+      "name": "Check the opponent's counter-line before attacking",
+      "definition": "Before attacking, play out the opponent's best answer (Munkidori moving counters, a Boss target, a revenge Knock Out). If their answer leaves you without an attacker, the aggressive line is wrong.",
+      "primary_skill": "opponent_modeling",
+      "contexts": [
+        "dragapult_mirror",
+        "mid_game"
+      ],
+      "supporting_claim_ids": [
+        "claim_eeHvbC8bpXQ_12"
+      ],
+      "source_count": 1,
+      "evidence_summary": "Hedrick rejects an attacking line for exactly this reason in his round-4 position.",
+      "confidence": "medium",
+      "open_questions": [],
+      "created_at": "2026-09-19T23:08:08+00:00"
+    },
+    {
+      "id": "target_selection_by_denial",
+      "name": "Choose the target that denies the opponent's next turn",
+      "definition": "When several Knock Outs are available, pick the one that removes the piece their next turn depends on, not the biggest number or the easiest Prize.",
+      "primary_skill": "damage_allocation",
+      "contexts": [
+        "bronzong_lopunny",
+        "alakazam",
+        "mid_game"
+      ],
+      "supporting_claim_ids": [
+        "claim_eeHvbC8bpXQ_15",
+        "claim_eeHvbC8bpXQ_16",
+        "claim_eeHvbC8bpXQ_17",
+        "claim_eeHvbC8bpXQ_25",
+        "claim_OcmjWWv-daQ_31"
+      ],
+      "source_count": 2,
+      "evidence_summary": "Hedrick compares three targets explicitly in the R11 position and states which is worst; Farah shows the same logic for Fezandipiti ex versus Kadabra + Abra.",
+      "confidence": "high",
+      "open_questions": [
+        "Is 'deny their next turn' ever worse than taking the extra Prize? The sources do not give a rule."
+      ],
+      "created_at": "2026-09-19T23:08:08+00:00"
+    },
+    {
+      "id": "read_hand_by_omission",
+      "name": "Read the opponent's hand by what they did not play",
+      "definition": "Ask which cards the opponent would have played if they held them; the cards they skipped are probably not in hand. Track their exact hand size and everything they searched.",
+      "primary_skill": "opponent_modeling",
+      "contexts": [
+        "alakazam",
+        "early_game"
+      ],
+      "supporting_claim_ids": [
+        "claim_OcmjWWv-daQ_28",
+        "claim_OcmjWWv-daQ_29"
+      ],
+      "source_count": 1,
+      "evidence_summary": "Farah teaches this explicitly and derives a concrete read in the Worlds final.",
+      "confidence": "medium",
+      "open_questions": [
+        "How reliable is the read against players who deliberately hold cards?"
+      ],
+      "created_at": "2026-09-19T23:08:08+00:00"
+    },
+    {
+      "id": "count_opponent_outs",
+      "name": "Count the opponent's remaining outs",
+      "definition": "Before choosing a disruption or a line, count what is left in their deck and hand: how many Boss's Orders, Energy, or search cards remain, and whether a card is likely prized.",
+      "primary_skill": "endgame",
+      "contexts": [
+        "dragapult_dusknoir",
+        "alakazam",
+        "endgame"
+      ],
+      "supporting_claim_ids": [
+        "claim_eeHvbC8bpXQ_18",
+        "claim_eeHvbC8bpXQ_19",
+        "claim_eeHvbC8bpXQ_20"
+      ],
+      "source_count": 1,
+      "evidence_summary": "Hedrick reasons explicitly from the opponent's remaining Energy count and gust effects in the round-12 endgame.",
+      "confidence": "high",
+      "open_questions": [],
+      "created_at": "2026-09-19T23:08:08+00:00"
+    },
+    {
+      "id": "preempt_resource_denial",
+      "name": "Recover resources before they are denied",
+      "definition": "Put the resource you will need back in hand a turn early when the opponent can still deny it (Crushing Hammer chains, discard effects), instead of waiting until it is needed.",
+      "primary_skill": "resource_management",
+      "contexts": [
+        "dragapult_mirror",
+        "mid_game"
+      ],
+      "supporting_claim_ids": [
+        "claim_eeHvbC8bpXQ_21",
+        "claim_eeHvbC8bpXQ_3"
+      ],
+      "source_count": 1,
+      "evidence_summary": "Hedrick names not playing Night Stretcher a turn earlier as the mistake that cost him a game.",
+      "confidence": "medium",
+      "open_questions": [],
+      "created_at": "2026-09-19T23:08:08+00:00"
+    },
+    {
+      "id": "threaten_win_next_turn",
+      "name": "Prefer the line that threatens to win next turn",
+      "definition": "Between two attacking lines, prefer the one that leaves you threatening a winning turn, so the opponent must answer; a line that takes a Prize but threatens nothing gives them a free turn.",
+      "primary_skill": "prize_mapping",
+      "contexts": [
+        "dragapult_blaziken",
+        "mid_game"
+      ],
+      "supporting_claim_ids": [
+        "claim_eeHvbC8bpXQ_22"
+      ],
+      "source_count": 1,
+      "evidence_summary": "Hedrick's own retrospective on a position he judges he played wrong.",
+      "confidence": "medium",
+      "open_questions": [
+        "Needs a counter-example: when is taking the Prize now better?"
+      ],
+      "created_at": "2026-09-19T23:08:08+00:00"
+    },
+    {
+      "id": "rotate_damaged_dragapult",
+      "name": "Rotate a damaged Dragapult out and keep the damage flowing",
+      "definition": "When the opponent attacks into your Dragapult, retreating it and continuing with Munkidori damage-moving (and Budew lock) can pressure them more than attacking again.",
+      "primary_skill": "sequencing",
+      "contexts": [
+        "alakazam_rabsca",
+        "dragapult_mirror",
+        "mid_game"
+      ],
+      "supporting_claim_ids": [
+        "claim_eeHvbC8bpXQ_13",
+        "claim_eeHvbC8bpXQ_23"
+      ],
+      "source_count": 1,
+      "evidence_summary": "Hedrick describes doing this in two different matchups.",
+      "confidence": "medium",
+      "open_questions": [],
+      "created_at": "2026-09-19T23:08:08+00:00"
+    },
+    {
+      "id": "resource_count_discipline",
+      "name": "Know which cards are consistency and which are resources",
+      "definition": "Card counts change how a card should be used: with three Night Stretcher it is a consistency card you spend freely, with two it is a resource you must save. The same logic applies to Ultra Ball counts per matchup.",
+      "primary_skill": "resource_management",
+      "contexts": [
+        "generic",
+        "deckbuilding"
+      ],
+      "supporting_claim_ids": [
+        "claim_eeHvbC8bpXQ_4",
+        "claim_eeHvbC8bpXQ_5",
+        "claim_eeHvbC8bpXQ_6"
+      ],
+      "source_count": 1,
+      "evidence_summary": "Hedrick explains both counts and the behaviour each count implies.",
+      "confidence": "high",
+      "open_questions": [],
+      "created_at": "2026-09-19T23:08:08+00:00"
+    },
+    {
+      "id": "avoid_feeding_opponent_draw",
+      "name": "Do not feed the opponent's draw engine",
+      "definition": "Choosing a Knock Out that triggers Flip the Script, or leaving their draw Pokémon alive, can matter more than the Prize; prefer targets that leave them without cards.",
+      "primary_skill": "opponent_modeling",
+      "contexts": [
+        "alakazam",
+        "mid_game"
+      ],
+      "supporting_claim_ids": [
+        "claim_OcmjWWv-daQ_31",
+        "claim_eeHvbC8bpXQ_25"
+      ],
+      "source_count": 2,
+      "evidence_summary": "Farah states the Fezandipiti ex Knock Out avoids Flip the Script; Hedrick attacks the draw engine of board-constrained decks.",
+      "confidence": "medium",
+      "open_questions": [],
+      "created_at": "2026-09-19T23:08:08+00:00"
+    }
+  ]
+}

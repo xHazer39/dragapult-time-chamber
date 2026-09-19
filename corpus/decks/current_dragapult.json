@@ -1,0 +1,189 @@
+{
+  "deck_name": "Gaetano's current Dragapult (the list being learned)",
+  "role": "CURRENT_DECK",
+  "status": "COUNTS_VERIFIED_PRINTS_PARTIAL",
+  "cards": [
+    {
+      "count": 2,
+      "name": "Budew",
+      "declared_print": "ASC 016",
+      "print_status": "verified"
+    },
+    {
+      "count": 4,
+      "name": "Dreepy",
+      "declared_print": "PRE 071",
+      "print_status": "verified"
+    },
+    {
+      "count": 1,
+      "name": "Dunsparce",
+      "declared_print": "JTG/sv9 078",
+      "print_status": "AMBIGUOUS: user wrote \"JTG/sv9 078\"; English JTG Dunsparce is 120"
+    },
+    {
+      "count": 3,
+      "name": "Dragapult ex",
+      "declared_print": "2x TWM 130 + 1x ASC (number not given)",
+      "print_status": "PARTIAL: ASC number missing"
+    },
+    {
+      "count": 1,
+      "name": "Meowth ex",
+      "declared_print": "POR/m3 061",
+      "print_status": "AMBIGUOUS: user wrote \"POR/m3 061\"; English POR Meowth ex listed by Limitless is 62"
+    },
+    {
+      "count": 1,
+      "name": "Fezandipiti ex",
+      "declared_print": "SFA/m2a 114",
+      "print_status": "AMBIGUOUS: user wrote \"SFA/m2a 114\""
+    },
+    {
+      "count": 2,
+      "name": "Drakloak",
+      "declared_print": "ASC 159",
+      "print_status": "verified"
+    },
+    {
+      "count": 2,
+      "name": "Drakloak",
+      "declared_print": "PRE 072",
+      "print_status": "verified"
+    },
+    {
+      "count": 2,
+      "name": "Munkidori",
+      "declared_print": "ASC 099",
+      "print_status": "verified"
+    },
+    {
+      "count": 1,
+      "name": "Dudunsparce",
+      "declared_print": "PRE 080",
+      "print_status": "verified"
+    },
+    {
+      "count": 4,
+      "name": "Crushing Hammer",
+      "declared_print": "POR 071",
+      "print_status": "verified"
+    },
+    {
+      "count": 1,
+      "name": "Rosa's Encouragement",
+      "declared_print": "POR 084",
+      "print_status": "verified"
+    },
+    {
+      "count": 1,
+      "name": "Unfair Stamp",
+      "declared_print": "TWM (number not given)",
+      "print_status": "PARTIAL: number missing"
+    },
+    {
+      "count": 2,
+      "name": "Poké Pad",
+      "declared_print": "MEE/Perfect Order (number not given)",
+      "print_status": "PARTIAL: number missing"
+    },
+    {
+      "count": 2,
+      "name": "Poké Pad",
+      "declared_print": "POR 081",
+      "print_status": "verified"
+    },
+    {
+      "count": 1,
+      "name": "Ultra Ball",
+      "declared_print": "MEG 131",
+      "print_status": "verified"
+    },
+    {
+      "count": 2,
+      "name": "Ultra Ball",
+      "declared_print": "PPS9 MEG 131",
+      "print_status": "verified"
+    },
+    {
+      "count": 3,
+      "name": "Night Stretcher",
+      "declared_print": "ASC 196",
+      "print_status": "verified"
+    },
+    {
+      "count": 1,
+      "name": "Special Red Card",
+      "declared_print": "CRI 082",
+      "print_status": "verified"
+    },
+    {
+      "count": 4,
+      "name": "Lillie's Determination",
+      "declared_print": "ASC 192",
+      "print_status": "verified"
+    },
+    {
+      "count": 4,
+      "name": "Buddy-Buddy Poffin",
+      "declared_print": "ASC 184",
+      "print_status": "verified"
+    },
+    {
+      "count": 2,
+      "name": "Crispin",
+      "declared_print": "PRE 105",
+      "print_status": "verified"
+    },
+    {
+      "count": 3,
+      "name": "Boss's Orders",
+      "declared_print": "MEG 114 (Ghetsis art)",
+      "print_status": "verified"
+    },
+    {
+      "count": 2,
+      "name": "Risky Ruins",
+      "declared_print": "MEG 127",
+      "print_status": "verified"
+    },
+    {
+      "count": 3,
+      "name": "Basic Psychic Energy",
+      "declared_print": "PPS8 MEE 005",
+      "print_status": "verified"
+    },
+    {
+      "count": 3,
+      "name": "Basic Fire Energy",
+      "declared_print": "PPS8 MEE 002",
+      "print_status": "verified"
+    },
+    {
+      "count": 3,
+      "name": "Basic Darkness Energy",
+      "declared_print": "MEE 007",
+      "print_status": "verified"
+    }
+  ],
+  "total": 60,
+  "hash_sha256_name_count": "38bfd811b4a3f8b6fcfbdaa8b4f6bdd4cb8b37599c45c5c721b3f71c8686fcda",
+  "identical_to_reference_by_name_and_count": true,
+  "provenance": {
+    "source": "Declared by the user (Gaetano) in the Claude Code session on 2026-09-19, second corrected list",
+    "earlier_versions": [
+      "First pasted list the same day had 1 Dragapult ex / 3 Dunsparce; the user corrected it to 3 / 1 after checking",
+      "cw-wizard/world_deck_manifest.py (purchase manifest), seeded into the Chamber as dragapult v1, hash 4fe582e25a26866f: same names and counts, different prints"
+    ],
+    "recorded_at": "2026-09-19T21:23:11+00:00"
+  },
+  "format": "Standard 2026 (H, I, J)",
+  "date": "2026-09-19",
+  "missing_information": [
+    "Exact number of the ASC Dragapult ex print",
+    "Exact number of Unfair Stamp (TWM)",
+    "Exact number of the MEE / Perfect Order Poké Pad",
+    "Whether Dunsparce, Meowth ex and Fezandipiti ex are the English prints (JTG 120, POR 62, ASC 142 / SFA 38) or other language prints; user notation mixes English set codes with JP-style codes",
+    "Print-level details do not change game text for training purposes; they only affect a print-level hash"
+  ]
+}
