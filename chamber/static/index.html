@@ -7,16 +7,27 @@
   <link rel="stylesheet" href="/app.css">
 </head>
 <body>
-  <header>
-    <strong>Dragapult Time Chamber</strong>
-    <nav>
-      <a href="#today" data-view="today">Today</a>
-      <a href="#case" data-view="case">Case</a>
-      <a href="#progress" data-view="progress">Progress</a>
-      <a href="#inbox" data-view="inbox">Inbox</a>
-    </nav>
-  </header>
-  <main id="main" aria-live="polite"></main>
+  <div class="app">
+    <aside class="sidebar" aria-label="Navigation">
+      <div class="brand">
+        <span class="mark" id="mark"></span>
+        <span class="hide-rail">Time Chamber</span>
+        <span class="spacer hide-rail"></span>
+        <button class="icon hide-rail" id="collapse" title="Collapse sidebar" aria-label="Collapse sidebar"></button>
+      </div>
+      <nav class="nav">
+        <a href="#today" data-view="today" title="Today · G T"><span data-icon="today"></span><span class="hide-rail">Today</span><span class="count hide-rail" id="count-today"></span></a>
+        <a href="#case" data-view="case" title="Case · G C"><span data-icon="case"></span><span class="hide-rail">Case</span></a>
+        <a href="#progress" data-view="progress" title="Progress · G P"><span data-icon="progress"></span><span class="hide-rail">Progress</span></a>
+        <a href="#inbox" data-view="inbox" title="Inbox · G I"><span data-icon="inbox"></span><span class="hide-rail">Inbox</span><span class="count hide-rail" id="count-inbox"></span></a>
+      </nav>
+      <div class="grow"></div>
+      <div class="deck-chip hide-rail" id="deck-chip"></div>
+    </aside>
+    <div class="content">
+      <main id="main" class="page" aria-live="polite"></main>
+    </div>
+  </div>
   <script src="/app.js"></script>
 </body>
 </html>

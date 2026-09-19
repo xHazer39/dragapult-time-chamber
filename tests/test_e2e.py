@@ -160,3 +160,30 @@ def test_coach_mocked_enabled(page, fake_llm):
     page.wait_for_selector('#coach-out >> text=Main concept')
     out = page.inner_text('#coach-out')
     assert 'not evidence' in out and 'Unverified claims' in out and 'Always spread counters.' in out
+
+
+def test_mode_hidden_before_reveal_and_keyboard_shortcuts(page):
+    page.goto(page.base + '/#case/demo-dive-count')        # leave a leak so the session has an exploit rep
+    page.wait_for_selector('#lock')
+    do_rep(page, choice_index=0, recall='Again')
+    page.goto(page.base + '/#today')
+    page.click('#start')
+    page.wait_for_selector('#position')
+    for mode in ('exploit', 'coverage', 'probe'):          # no training-mode hint before the decision
+        assert mode not in page.inner_text('main').lower()
+    for ta in page.locator('textarea[id^="plan-"]').all():
+        ta.fill('a plan with the letters a b 1 2')          # typing never triggers shortcuts
+    page.keyboard.press('Control+Enter')                     # lock
+    page.wait_for_selector('#locked-plan')
+    page.fill('#other', 'a')
+    assert page.locator('input[name="choice"]:checked').count() == 0
+    page.locator('#other').blur()
+    page.keyboard.press('a')
+    assert page.locator('input[name="choice"][value="A"]').is_checked()
+    assert 'exploit' not in page.inner_text('main').lower()
+    page.keyboard.press('Control+Enter')                     # submit
+    page.wait_for_selector('#ledger')
+    page.locator('body').click(position={'x': 2, 'y': 2})
+    page.keyboard.press('2')
+    assert page.locator('input[name^="recall-"][value="2"]:checked').count() == 1
+    assert page.locator('.focusbar .badge').inner_text() in ('exploit', 'coverage', 'probe')   # shown after reveal
