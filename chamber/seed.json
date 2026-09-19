@@ -1,0 +1,193 @@
+{
+  "_note": "DEMO SEED. Every case is synthetic=true and proves the workflow only. Card texts inside positions are paraphrased premises of the synthetic position, not a rules reference. Replace with real reviewed cases through the Inbox.",
+  "deck": {
+    "deck_id": "dragapult",
+    "source": "cw-wizard/world_deck_manifest.py (the user's purchase manifest; tournament provenance not recorded)",
+    "format": "Standard (unverified)",
+    "date": "2026-09",
+    "cards": [[3, "Dragapult ex", "TWM", "130"], [4, "Drakloak", "TWM", "129"], [4, "Dreepy", "TWM", "128"], [1, "Dudunsparce", "TEF", "129"], [1, "Dunsparce", "JTG", "120"], [2, "Budew", "PRE", "4"], [2, "Munkidori", "TWM", "95"], [1, "Fezandipiti ex", "SFA", "38"], [1, "Meowth ex", "POR", "62"], [4, "Lillie's Determination", "MEG", "119"], [3, "Boss's Orders", "MEG", "114"], [2, "Crispin", "SCR", "133"], [1, "Rosa's Encouragement", "POR", "84"], [2, "Risky Ruins", "MEG", "127"], [4, "Buddy-Buddy Poffin", "TEF", "144"], [4, "Crushing Hammer", "SVI", "168"], [4, "Poké Pad", "POR", "81"], [3, "Night Stretcher", "ASC", "196"], [3, "Ultra Ball", "MEG", "131"], [1, "Special Red Card", "CRI", "82"], [1, "Unfair Stamp", "TWM", "165"], [3, "Basic Darkness Energy", "SVE", "7"], [3, "Basic Fire Energy", "SVE", "2"], [3, "Basic Psychic Energy", "SVE", "5"]]
+  },
+  "concepts": [
+    {"id": "phantom_dive_counter_math", "name": "Phantom Dive counter math", "skill": "damage_allocation",
+     "definition": "Before placing the 6 counters, write each benched target's remaining HP / 10 and spend counters where they complete Knock Outs.",
+     "notes": "Demo wording. Replace with coach-validated wording."},
+    {"id": "prize_map_t_plus_2", "name": "Prize map T+2", "skill": "prize_mapping",
+     "definition": "Plan this turn's Prize cards together with next turn's, so the two turns finish the game along more than one route.",
+     "notes": "Demo wording (HEURISTIC)."},
+    {"id": "phantom_dive_future_ko_setup", "name": "Phantom Dive future-KO setup", "skill": "damage_allocation",
+     "definition": "Counters that do not Knock Out now can still put a target into next turn's KO range; weigh that against Prizes banked now.",
+     "notes": "Demo wording (HEURISTIC)."},
+    {"id": "information_before_commitment", "name": "Information before commitment", "skill": "sequencing",
+     "definition": "Take the free information (look, draw, search results) before the actions that commit resources.",
+     "notes": "Demo wording (HEURISTIC)."},
+    {"id": "resource_preservation", "name": "Resource preservation", "skill": "resource_management",
+     "definition": "Spend the cards you can recover or replace; keep the unique and unrecoverable ones.",
+     "notes": "Demo wording (HEURISTIC)."},
+    {"id": "two_prize_bench_liability", "name": "Two-Prize bench liability", "skill": "board_bench_discipline",
+     "definition": "Every benched Pokémon ex is a gust target worth 2 Prizes; count what the opponent needs before benching one.",
+     "notes": "Demo wording (HEURISTIC)."}
+  ],
+  "cases": [
+    {
+      "id": "demo-dive-count", "synthetic": true, "reconstruction": "exact", "transfer_level": "L2", "difficulty": 1,
+      "decision_family": "damage_target", "criticality": 2, "criticality_source": "author estimate (synthetic demo)",
+      "matchup": "generic (synthetic)", "format": "Standard (unverified)", "date": "2026-09",
+      "observed_state": "SYNTHETIC DEMO POSITION\nYour Active: Dragapult ex, energy for Phantom Dive attached.\nPhantom Dive (premise of this position): 200 damage to the opponent's Active Pokémon, and put 6 damage counters on the opponent's Benched Pokémon in any way you like.\nOpponent Active: a Pokémon ex (2 Prizes) with 190 HP remaining.\nOpponent Bench:\n  B1 Basic (1 Prize) 30 HP remaining\n  B2 Basic (1 Prize) 30 HP remaining\n  B3 Stage 1 (1 Prize) 60 HP remaining\n  B4 Basic Pokémon ex (2 Prizes) 210 HP remaining\nNo effect prevents damage or damage counters.\nPrizes remaining: you 6, opponent 5.",
+      "unknown_fields": ["opponent hand"],
+      "prompt": "You attack with Phantom Dive. Which placement of the 6 counters takes the most Prize cards THIS turn?",
+      "requires": ["objective"],
+      "hint": "One damage counter = 10 damage. Count counters needed per target.",
+      "choices": [
+        {"key": "A", "text": "6 counters on B3"},
+        {"key": "B", "text": "3 on B1, 3 on B2"},
+        {"key": "C", "text": "6 counters on B4"},
+        {"key": "D", "text": "2 on B1, 2 on B2, 2 on B3"}
+      ],
+      "completeness": "PARTIAL",
+      "symptom_tags": ["miscounted_counters"], "root_cause_tags": ["no_explicit_count"],
+      "concepts": ["phantom_dive_counter_math"],
+      "evidence": [
+        {"level": "FACT", "choice": "B", "verdict": "good", "source_ref": "arithmetic on the stated position",
+         "claim": "Active: 200 >= 190, KO (2 Prizes) in every option. B puts 30 damage on B1 and B2 (30 HP each): 2 more KOs, 4 Prizes total, the maximum possible with 6 counters here."},
+        {"level": "FACT", "choice": "A", "verdict": "bad", "source_ref": "arithmetic on the stated position",
+         "claim": "A: 60 damage KOs B3 only: 3 Prizes total."},
+        {"level": "FACT", "choice": "C", "verdict": "bad", "source_ref": "arithmetic on the stated position",
+         "claim": "C: B4 goes to 150 HP, no bench KO: 2 Prizes total."},
+        {"level": "FACT", "choice": "D", "verdict": "bad", "source_ref": "arithmetic on the stated position",
+         "claim": "D: 20 damage each, no bench KO: 2 Prizes total."},
+        {"level": "HEURISTIC",
+         "claim": "Whether taking the most Prizes now is the right plan depends on the rest of the game. This case only trains the counting."}
+      ]
+    },
+    {
+      "id": "demo-dive-count-2", "synthetic": true, "reconstruction": "exact", "transfer_level": "L2", "difficulty": 1,
+      "decision_family": "damage_target", "criticality": 2, "criticality_source": "author estimate (synthetic demo)",
+      "matchup": "generic (synthetic)", "format": "Standard (unverified)", "date": "2026-09",
+      "observed_state": "SYNTHETIC DEMO POSITION\nYour Active: Dragapult ex attacking with Phantom Dive (premise: 200 to the Active, 6 damage counters spread on the opponent's Bench as you like).\nOpponent Active: Stage 2 (1 Prize) 250 HP remaining.\nOpponent Bench:\n  B1 Basic (1 Prize) 50 HP remaining\n  B2 Stage 1 (1 Prize) 20 HP remaining\n  B3 Basic (1 Prize) 40 HP remaining\nNo effect prevents damage or damage counters.",
+      "unknown_fields": ["opponent hand", "opponent deck contents"],
+      "prompt": "Which placement Knocks Out the most Benched Pokémon this turn?",
+      "requires": ["objective"],
+      "hint": "The Active survives. Everything happens on the Bench.",
+      "choices": [
+        {"key": "A", "text": "5 on B1, 1 on B2"},
+        {"key": "B", "text": "2 on B2, 4 on B3"},
+        {"key": "C", "text": "4 on B1, 2 on B2"}
+      ],
+      "completeness": "PARTIAL",
+      "symptom_tags": ["miscounted_counters"], "root_cause_tags": ["no_explicit_count"],
+      "concepts": ["phantom_dive_counter_math"],
+      "evidence": [
+        {"level": "FACT", "choice": "B", "verdict": "good", "source_ref": "arithmetic on the stated position",
+         "claim": "B: 20 on B2 (20 HP) and 40 on B3 (40 HP): 2 KOs, the maximum with 6 counters here."},
+        {"level": "FACT", "choice": "A", "verdict": "bad", "source_ref": "arithmetic on the stated position",
+         "claim": "A: B1 KO (50), B2 left at 10: 1 KO."},
+        {"level": "FACT", "choice": "C", "verdict": "bad", "source_ref": "arithmetic on the stated position",
+         "claim": "C: B2 KO, B1 left at 10: 1 KO."}
+      ]
+    },
+    {
+      "id": "demo-dive-setup", "synthetic": true, "reconstruction": "exact", "transfer_level": "L2", "difficulty": 3,
+      "decision_family": "damage_target", "criticality": 3, "criticality_source": "author estimate (synthetic demo)",
+      "matchup": "generic (synthetic)", "format": "Standard (unverified)", "date": "2026-09",
+      "observed_state": "SYNTHETIC DEMO POSITION\nPrizes remaining: you 5, opponent 3.\nYour Active: Dragapult ex (Phantom Dive premise: 200 to the Active, 6 counters on the Bench as you like). Your Bench: Drakloak, Dreepy. No second attacker is ready.\nOpponent Active: a Pokémon ex (2 Prizes) with 190 HP remaining: Phantom Dive KOs it.\nOpponent Bench:\n  B1 Basic (1 Prize) 30 HP remaining\n  B4 Basic Pokémon ex (2 Prizes) 210 HP remaining, it will attack next turn\nYou have Boss's Orders in hand for next turn.",
+      "unknown_fields": ["opponent hand", "whether the opponent can Knock Out your Dragapult ex next turn", "opponent healing or switching options"],
+      "prompt": "After the Active KO you will have 3 Prizes left. Where do the 6 counters go?",
+      "requires": ["objective", "prize_map", "opponent_plan"],
+      "hint": "Write the Prizes you need next turn under each option.",
+      "choices": [
+        {"key": "A", "text": "3 on B1 (KO), 3 on B4 (B4 at 180)"},
+        {"key": "B", "text": "6 on B4 (B4 at 150), B1 untouched"}
+      ],
+      "completeness": "PARTIAL",
+      "symptom_tags": ["autopilot_prizes"], "root_cause_tags": ["no_prize_map"],
+      "concepts": ["prize_map_t_plus_2", "phantom_dive_future_ko_setup"],
+      "evidence": [
+        {"level": "FACT", "source_ref": "arithmetic on the stated position",
+         "claim": "A leaves you at 2 Prizes: next turn a KO on B4 (180 HP) or on any two 1-Prize Pokémon wins. B leaves you at 3 Prizes: next turn B4 (150 HP) plus one 1-Prize KO wins."},
+        {"level": "HEURISTIC", "choice": "A", "verdict": "good",
+         "claim": "A Prize taken now cannot be undone by healing, switching or shuffling; damage placed on B4 can."},
+        {"level": "HEURISTIC", "choice": "A", "verdict": "bad",
+         "claim": "If your Dragapult ex is Knocked Out and the next attacker hits for 150-179, A leaves B4 out of KO range; only B keeps it in."},
+        {"level": "UNKNOWN",
+         "claim": "Which heuristic applies depends on the opponent's hand and your backup attacker. This demo does not settle it."}
+      ]
+    },
+    {
+      "id": "demo-recon-first", "synthetic": true, "reconstruction": "exact", "transfer_level": "L2", "difficulty": 2,
+      "decision_family": "search", "criticality": 3, "criticality_source": "author estimate (synthetic demo)",
+      "matchup": "generic (synthetic)", "format": "Standard (unverified)", "date": "2026-09",
+      "observed_state": "SYNTHETIC DEMO POSITION\nYour turn 3. Active: Drakloak. Bench: Drakloak, Budew.\nDrakloak ability (premise): once during your turn, look at the top 2 cards of your deck, put 1 into your hand and the other on the bottom.\nHand: Ultra Ball, Basic Fire Energy, Crushing Hammer, Night Stretcher, Boss's Orders.\nYou want a Dragapult ex this turn. Nothing has been played yet.",
+      "unknown_fields": ["top 2 cards of your deck", "your Prize cards"],
+      "prompt": "What do you do first?",
+      "requires": ["objective", "preserve"],
+      "hint": "Which action tells you something for free?",
+      "choices": [
+        {"key": "A", "text": "Ultra Ball first (discard 2) for Dragapult ex, then use the ability"},
+        {"key": "B", "text": "Use the ability first, then decide on Ultra Ball and its discards"},
+        {"key": "C", "text": "Attach Fire Energy first, then Ultra Ball"}
+      ],
+      "completeness": "PARTIAL",
+      "symptom_tags": ["committed_before_looking"], "root_cause_tags": ["sequencing_autopilot"],
+      "concepts": ["information_before_commitment", "resource_preservation"],
+      "evidence": [
+        {"level": "HEURISTIC", "choice": "B", "verdict": "good",
+         "claim": "Looking first can find the Dragapult ex or change which two cards you are willing to discard."},
+        {"level": "HEURISTIC", "choice": "A", "verdict": "bad",
+         "claim": "Discarding before looking can throw away a card the ability would have made unnecessary to spend."},
+        {"level": "UNKNOWN", "choice": "C",
+         "claim": "Attachment order matters only if an attachment target decision depends on what you find; not settled here."}
+      ]
+    },
+    {
+      "id": "demo-bench-meowth", "synthetic": true, "reconstruction": "exact", "transfer_level": "L2", "difficulty": 2,
+      "decision_family": "bench", "criticality": 4, "criticality_source": "author estimate (synthetic demo)",
+      "matchup": "generic (synthetic)", "format": "Standard (unverified)", "date": "2026-09",
+      "observed_state": "SYNTHETIC DEMO POSITION\nPrizes remaining: you 4, opponent 2.\nYour board: Active Dragapult ex (ready to attack), Bench: Drakloak, Dreepy. No Pokémon ex on your Bench.\nHand: Meowth ex, Poké Pad, Basic Psychic Energy.\nMeowth ex (premise): when you play it from your hand onto your Bench, you may search your deck for a Supporter.\nYou have no Supporter in hand. Your attack this turn takes 1 Prize at most.",
+      "unknown_fields": ["opponent hand (7 cards)", "whether the opponent holds a gust effect"],
+      "prompt": "Do you bench Meowth ex to find a Supporter?",
+      "requires": ["objective", "opponent_plan"],
+      "hint": "What does the opponent need to win next turn in each case?",
+      "choices": [
+        {"key": "A", "text": "Bench Meowth ex and search a Supporter"},
+        {"key": "B", "text": "Do not bench Meowth ex; play Poké Pad and take the attack"}
+      ],
+      "completeness": "PLAUSIBLE",
+      "symptom_tags": ["benched_liability"], "root_cause_tags": ["ignored_opponent_prize_count"],
+      "concepts": ["two_prize_bench_liability"],
+      "evidence": [
+        {"level": "HEURISTIC", "choice": "A", "verdict": "bad",
+         "claim": "With 2 Prizes left, a benched Meowth ex is a one-gust win for the opponent."},
+        {"level": "HEURISTIC", "choice": "A",
+         "claim": "If the Supporter found wins the game this turn or removes the opponent's win, the liability may not matter."},
+        {"level": "UNKNOWN", "claim": "Whether the opponent holds a gust effect is hidden information."}
+      ]
+    },
+    {
+      "id": "demo-ultra-discard", "synthetic": true, "reconstruction": "exact", "transfer_level": "L2", "difficulty": 2,
+      "decision_family": "discard", "criticality": 3, "criticality_source": "author estimate (synthetic demo)",
+      "matchup": "generic (synthetic)", "format": "Standard (unverified)", "date": "2026-09",
+      "observed_state": "SYNTHETIC DEMO POSITION\nMid-game. Your Bench: Drakloak x2, no energy on either. Active: Budew.\nHand: Ultra Ball, Budew, Night Stretcher, Basic Psychic Energy, Basic Fire Energy, Boss's Orders.\nNight Stretcher (premise): put a Pokémon or a Basic Energy from your discard pile into your hand.\nYou will Ultra Ball for Dragapult ex. You do not need to attack this turn.",
+      "unknown_fields": ["your Prize cards", "energy remaining in deck"],
+      "prompt": "Which 2 cards do you discard to Ultra Ball?",
+      "requires": ["preserve"],
+      "hint": "Which cards can come back?",
+      "choices": [
+        {"key": "A", "text": "Boss's Orders + Budew"},
+        {"key": "B", "text": "Basic Fire Energy + Basic Psychic Energy"},
+        {"key": "C", "text": "Budew + Night Stretcher"},
+        {"key": "D", "text": "Basic Psychic Energy + Budew"}
+      ],
+      "completeness": "PARTIAL",
+      "symptom_tags": ["discarded_unique_card"], "root_cause_tags": ["no_recovery_check"],
+      "concepts": ["resource_preservation"],
+      "evidence": [
+        {"level": "HEURISTIC", "choice": "D", "verdict": "good",
+         "claim": "Budew and a Basic Energy are both recoverable with Night Stretcher; Boss's Orders and Night Stretcher are not."},
+        {"level": "HEURISTIC", "choice": "A", "verdict": "bad",
+         "claim": "Boss's Orders is a unique gust effect; discarding it early narrows later prize maps."},
+        {"level": "UNKNOWN",
+         "claim": "If both energy types are needed next turn and none remain in the deck, D can cost a turn. Energy remaining is unknown."}
+      ]
+    }
+  ]
+}
