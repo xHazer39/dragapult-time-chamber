@@ -25,11 +25,26 @@ def utcnow():
     return datetime.now(timezone.utc)
 
 
+def _public_plan(items):
+    """Training plan safe to expose before the rep: no case/concept identifiers."""
+    return [{'mode': i['mode'], 'reason': i['reason']} for i in items]
+
+
+def _public_today(data):
+    """Hide exact concept names/ids before the session so Today cannot prime the answer."""
+    return {
+        **{k: v for k, v in data.items() if k not in ('plan', 'leaks', 'due')},
+        'plan': _public_plan(data['plan']),
+        'leaks': [{'recent': x['recent'], 'status': x['status']} for x in data['leaks']],
+        'due_count': len(data['due']),
+    }
+
+
 # --------------------------------------------------------------------------- training
 
 @route('GET', '/api/today')
 def get_today(conn, body):
-    return scheduler.today(conn, utcnow())
+    return _public_today(scheduler.today(conn, utcnow()))
 
 
 @route('POST', '/api/sessions')
@@ -37,12 +52,12 @@ def post_session(conn, body):
     items = scheduler.plan(conn, utcnow())
     if not items:
         raise Refused('nothing to train right now')
-    return {'session_id': train.start_session(conn, items), 'plan': items}
+    return {'session_id': train.start_session(conn, items), 'reps': len(items)}
 
 
 @route('GET', r'/api/sessions/(\d+)/next')
 def get_next(conn, body, sid):
-    return train.next_item(conn, int(sid)) or {'done': True, 'today': scheduler.today(conn, utcnow())}
+    return train.next_item(conn, int(sid)) or {'done': True, 'today': _public_today(scheduler.today(conn, utcnow()))}
 
 
 @route('GET', r'/api/cases/([a-z0-9_-]+)')
@@ -65,13 +80,17 @@ def post_hint(conn, body, aid):
 
 @route('POST', r'/api/attempts/(\d+)/answer')
 def post_answer(conn, body, aid):
-    return train.answer(conn, int(aid), body.get('choice'), body.get('other_text', ''), body.get('reasoning', ''))
+    result = train.answer(conn, int(aid), body.get('choice'), body.get('other_text', ''), body.get('reasoning', ''))
+    result['coach_enabled'] = coach.config()['enabled']
+    result['evidence_levels'] = db.LEVELS
+    return result
 
 
 @route('POST', r'/api/attempts/(\d+)/review')
 def post_review(conn, body, aid):
     ratings = {k: int(v) for k, v in (body.get('ratings') or {}).items()}
-    train.review(conn, int(aid), ratings, body.get('outcome') or None, body.get('error_tags', []), body.get('note', ''))
+    train.review(conn, int(aid), ratings, body.get('outcome') or None, body.get('error_tags', []),
+                 body.get('note', ''), error_concepts=body.get('error_concepts', []))
     return {'ok': True}
 
 
@@ -86,7 +105,8 @@ def post_coach(conn, body, aid):
 @route('POST', '/api/real')
 def post_real(conn, body):
     return {'attempt_id': train.log_real(conn, body.get('concepts', []), body.get('outcome') or None,
-                                         body.get('note', ''), body.get('source_id'), body.get('error_tags', []))}
+                                         body.get('note', ''), body.get('source_id'), body.get('error_tags', []),
+                                         body.get('error_concepts', []))}
 
 
 @route('GET', '/api/progress')

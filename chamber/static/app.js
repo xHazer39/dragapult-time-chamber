@@ -64,9 +64,9 @@ async function viewToday() {
     h('section', { id: 'real-evidence' }, h('h2', {}, 'Real-match evidence'),
       h('div', { class: `banner ${t.play.play ? 'warn' : ''}` }, t.play.play ? 'Go play competitive matches. ' : '', t.play.reason)),
     h('section', {}, h('h2', {}, 'Leaks'),
-      t.leaks.length ? h('ul', {}, t.leaks.map((l) => h('li', {}, `${l.name}: ${l.recent.errors}/${l.recent.n} recent results were errors (${l.status})`)))
+      t.leaks.length ? h('ul', {}, t.leaks.map((l, i) => h('li', {}, `Leak ${i + 1}: ${l.status}; verified errors ${l.recent.errors}/${l.recent.n}, self-reported errors ${l.recent.self_errors}/${l.recent.self_n}`)))
         : h('p', { class: 'muted' }, 'No recorded leak yet. Coverage and probe reps look for unrecorded ones.'),
-      h('p', { class: 'muted' }, `Concepts with memory due (FSRS): ${t.due.length}`)),
+      h('p', { class: 'muted' }, `Concepts with memory due (FSRS): ${t.due_count}`)),
     h('section', {}, h('h2', {}, 'Deck'), h('p', {}, t.deck.label),
       t.deck.cases_for_older_versions ? h('p', { class: 'warn' }, `${t.deck.cases_for_older_versions} case(s) were written for an older deck version. Check them before trusting them.`) : null));
 }
@@ -171,7 +171,7 @@ function revealView(r) {
     h('section', {}, h('h2', {}, 'Concepts'), c.concepts.map((k) => h('div', {}, h('strong', {}, k.name), badge(k.skill), h('p', {}, k.definition)))),
     coachBox(r),
     reviewForm(r),
-    evidenceForm(c));
+    evidenceForm(c, r.evidence_levels));
 }
 
 function coachBox(r) {
@@ -183,7 +183,7 @@ function coachBox(r) {
     h('p', {}, h('strong', {}, 'Next focus: '), x.next_focus),
     x.new_claims.length ? [h('h3', {}, 'Unverified claims (not added to evidence)'), h('ul', {}, x.new_claims.map((cl) => h('li', {}, cl)))] : null));
   if (r.attempt.coach) render(r.attempt.coach);
-  const enabled = S.meta && S.meta.coach.enabled;
+  const enabled = !!r.coach_enabled;
   return h('section', {}, h('h2', {}, 'Coach (optional LLM)'),
     enabled ? h('button', { id: 'coach-btn', on: { click: async (ev) => { ev.target.disabled = true; out.textContent = 'Asking…';
       try { render(await api('POST', `/api/attempts/${r.attempt.id}/coach`)); } catch (e) { out.textContent = e.message; } } } }, 'Ask coach')
@@ -203,19 +203,25 @@ function reviewForm(r) {
     c.concepts.map((k) => h('div', {}, h('label', {}, k.name), radios(`recall-${k.id}`, RECALL))),
     r.graded ? null : [h('label', {}, 'Compared with the evidence, was your decision an error you want to stop repeating?'),
       radios('self-outcome', [['ok', 'No, it was fine'], ['error', 'Yes, an error'], ['', 'Not sure']], '')],
+    c.concepts.length > 1 ? [h('label', {}, 'If this was an error, which concept(s) actually caused it?'),
+      h('p', { class: 'muted' }, 'Leave all unchecked if you are unsure. The Chamber will not blame every linked concept automatically.'),
+      h('div', { id: 'error-concepts' }, c.concepts.map((k) => h('label', { class: 'choice' },
+        h('input', { type: 'checkbox', name: 'error-concept', value: k.id }), k.name)))] : null,
     field('Error / root-cause tags (comma separated, optional)', h('input', { type: 'text', id: 'error-tags',
       placeholder: c.root_cause_tags.concat(c.symptom_tags).join(', ') })),
     h('button', { class: 'primary', id: 'save-review', on: { click: async () => {
       const ratings = Object.fromEntries(c.concepts.map((k) => [k.id, Number(picked(`recall-${k.id}`))]));
-      try { await api('POST', `/api/attempts/${r.attempt.id}/review`, { ratings, outcome: picked('self-outcome') || null, error_tags: tags(val('error-tags')) });
+      const errorConcepts = [...document.querySelectorAll('input[name="error-concept"]:checked')].map((x) => x.value);
+      try { await api('POST', `/api/attempts/${r.attempt.id}/review`, { ratings, outcome: picked('self-outcome') || null,
+        error_tags: tags(val('error-tags')), error_concepts: errorConcepts });
         form.hidden = true; after.hidden = false; } catch (e) { fail(box, e); } } } }, 'Save review'), box);
   return h('section', {}, h('h2', {}, 'Review'), form, after);
 }
 
-function evidenceForm(c) {
+function evidenceForm(c, levels) {
   const box = errorBox();
   return h('details', { class: 'box' }, h('summary', {}, 'Add evidence to this case (e.g. a coach review). Appended, never replaces.'),
-    evidenceFields('new-ev', {}, S.meta.levels),
+    evidenceFields('new-ev', {}, levels),
     h('button', { on: { click: async () => {
       try { const r = await api('POST', `/api/cases/${c.id}/evidence`, readEvidence('new-ev'));
         if (r.errors.length) throw new Error(r.errors.join('\n'));
@@ -238,10 +244,12 @@ function readEvidence(p) {
 
 // ------------------------------------------------------------------ PROGRESS
 function tierCell(t, min) {
-  const n = t.ok + t.error;
-  const txt = n ? `${t.ok}/${n} ok` : '—';
-  return h('td', {}, txt, t.undefined ? h('span', { class: 'muted' }, ` (+${t.undefined} ungraded)`) : null,
-    n < min ? h('div', { class: 'muted' }, 'insufficient evidence') : null);
+  const n = t.ok + t.error, sn = t.self_ok + t.self_error;
+  return h('td', {},
+    n ? h('div', {}, `${t.ok}/${n} verified ok`) : h('div', { class: 'muted' }, 'no verified result'),
+    sn ? h('div', { class: 'muted' }, `${t.self_ok}/${sn} self-reported ok`) : null,
+    t.undefined ? h('div', { class: 'muted' }, `${t.undefined} unattributed/ungraded`) : null,
+    n < min ? h('div', { class: 'muted' }, 'insufficient verified evidence') : null);
 }
 function repeatCell(r, min) {
   if (!r.later) return h('td', { class: 'muted' }, '—');
@@ -252,7 +260,7 @@ async function viewProgress() {
   const [p, m] = [await api('GET', '/api/progress'), await meta()];
   const th = p.thresholds, box = errorBox();
   show(h('h1', {}, 'Progress'),
-    h('p', { class: 'muted' }, 'Counts are ok / graded opportunities. "Memory" is the FSRS recall probability of a concept: it is NOT playing skill. Seen = L0-L1, unseen = L2-L3, real = L4.'),
+    h('p', { class: 'muted' }, 'Verified outcomes come from graded evidence. Self-reports are shown separately and never certify transfer. "Memory" is FSRS concept recall, not playing skill. Seen = L0-L1, unseen = L2-L3, real = L4.'),
     h('section', {}, h('h2', {}, 'Repeat errors and transfer by concept'), h('div', { class: 'scroll' }, h('table', { id: 'progress' },
       h('tr', {}, ['Concept', 'Status', 'Repeat after first error: drills', 'Repeat: real games', 'Unseen', 'Real', 'Seen', 'Memory (FSRS)', 'Median decision time'].map((x) => h('th', {}, x))),
       p.concepts.map((s) => h('tr', {}, h('td', {}, s.name), h('td', {}, s.status),
@@ -268,11 +276,16 @@ async function viewProgress() {
       h('div', {}, m.concepts.map((k) => h('label', { class: 'choice' }, h('input', { type: 'checkbox', name: 'real-concept', value: k.id }), k.name))),
       h('label', {}, 'How did you handle it?'),
       radios('real-outcome', [['ok', 'Handled it'], ['error', 'Made the error'], ['', 'Not sure']], ''),
+      h('label', {}, 'If it was an error, which selected concept(s) caused it?'),
+      h('p', { class: 'muted' }, 'Optional. Leave blank if unsure; the error will not be attributed to every concept.'),
+      h('div', {}, m.concepts.map((k) => h('label', { class: 'choice' }, h('input', { type: 'checkbox', name: 'real-error-concept', value: k.id }), k.name))),
       field('Error tags (comma separated)', h('input', { type: 'text', id: 'real-tags' })),
       field('Note', h('textarea', { id: 'real-note' })),
       h('button', { class: 'primary', id: 'log-real-btn', on: { click: async () => {
         const concepts = [...document.querySelectorAll('input[name="real-concept"]:checked')].map((x) => x.value);
-        try { await api('POST', '/api/real', { concepts, outcome: picked('real-outcome') || null, note: val('real-note'), error_tags: tags(val('real-tags')) });
+        const errorConcepts = [...document.querySelectorAll('input[name="real-error-concept"]:checked')].map((x) => x.value);
+        try { await api('POST', '/api/real', { concepts, outcome: picked('real-outcome') || null, note: val('real-note'),
+          error_tags: tags(val('real-tags')), error_concepts: errorConcepts });
           viewProgress(); } catch (e) { fail(box, e); } } } }, 'Log opportunity'), box));
 }
 
@@ -405,7 +418,6 @@ async function render() {
   const parts = (location.hash.slice(1) || 'today').split('/');
   document.querySelectorAll('nav a').forEach((a) => a.classList.toggle('active', a.dataset.view === parts[0]));
   try {
-    await meta();
     await ({ today: viewToday, case: viewCase, progress: viewProgress, inbox: viewInbox }[parts[0]] || viewToday)(parts);
   } catch (e) { show(h('p', { class: 'error', role: 'alert' }, e.message)); }
 }

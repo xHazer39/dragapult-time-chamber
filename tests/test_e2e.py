@@ -72,7 +72,7 @@ def test_error_becomes_a_leak_and_is_scheduled(page):
     first = page.locator('#plan li').first.inner_text()
     assert 'exploit' in first and 'errors' in first
     assert 'phantom_dive' not in page.inner_text('#plan')         # the plan never names the concept
-    assert 'Phantom Dive counter math' in page.inner_text('main')   # ...but the leak list does
+    assert 'Phantom Dive counter math' not in page.inner_text('main')  # Today must not prime the upcoming case
     page.click('#start')
     page.wait_for_selector('#position')
     assert 'Knocks Out the most Benched' in page.inner_text('#prompt')   # demo-dive-count-2: unseen, same concept
@@ -100,12 +100,12 @@ def test_retry_is_seen_and_progress_separates_tiers_and_real_games(page):
     page.goto(page.base + '/#progress')
     page.wait_for_selector('#progress')
     row = page.locator('#progress tr', has_text='Phantom Dive counter math').inner_text()
-    assert '1/1 ok' in row and 'insufficient evidence' in row
+    assert '1/1 verified ok' in row and 'insufficient verified evidence' in row
     page.check('input[name="real-concept"][value="two_prize_bench_liability"]')
     page.check('input[name="real-outcome"][value="error"]')
     page.fill('#real-tags', 'benched_liability')
     page.click('#log-real-btn')
-    page.wait_for_selector('#progress tr:has-text("Two-Prize bench liability") >> text=0/1 ok')
+    page.wait_for_selector('#progress tr:has-text("Two-Prize bench liability") >> text=self-reported ok')
     assert 'benched_liability: 1' in page.inner_text('main')
 
 

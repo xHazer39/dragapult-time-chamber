@@ -136,6 +136,37 @@ def test_retired_and_low_criticality_cases_are_never_scheduled(fx):
     assert 'fx-consensus' not in ids and 'fx-manual-setup' not in ids
 
 
+
+def test_self_report_ok_never_certifies_transfer(seeded):
+    rep(seeded, 'demo-ultra-discard', 'D', outcome='ok')
+    s = {x['id']: x for x in stats.concept_stats(seeded, NOW)}['resource_preservation']
+    assert s['tiers']['unseen']['self_ok'] == 1
+    assert s['tiers']['unseen']['ok'] == 0
+    assert s['status'] == 'insufficient verified evidence'
+
+
+def test_multiconcept_error_is_not_blindly_attributed(fx):
+    case = core.get_case(fx, 'fx-log-partial')
+    aid = train.start_attempt(fx, case['id'], None, {f: 'x' for f in case['requires']})
+    train.answer(fx, aid, (case['choices'] or [{'key': None}])[0]['key'], other_text='line' if not case['choices'] else '')
+    ratings = {k['id']: 3 for k in case['concepts']}
+    train.review(fx, aid, ratings, self_outcome='error', error_concepts=[case['concepts'][0]['id']], when=NOW)
+    rows = {r['concept_id']: r['error_relevant'] for r in fx.execute(
+        'SELECT concept_id, error_relevant FROM attempt_concepts WHERE attempt_id = ?', (aid,))}
+    assert rows[case['concepts'][0]['id']] == 1
+    assert all(v == 0 for k, v in rows.items() if k != case['concepts'][0]['id'])
+
+
+def test_scheduler_can_repeat_same_leak_with_different_cases(seeded):
+    rep(seeded, 'demo-dive-count', 'A')
+    cfg = {**scheduler.CONFIG, 'reps': 6, 'mix': {'exploit': 1.0}, 'max_reps_per_concept': 3}
+    items = scheduler.plan(seeded, NOW, cfg)
+    same = [i for i in items if i['concept_id'] == 'phantom_dive_counter_math']
+    assert len(same) >= 2
+    assert len({i['case_id'] for i in same}) == len(same)
+    assert len(same) <= 3
+    assert all(a['concept_id'] != b['concept_id'] for a, b in zip(items, items[1:]) if len({x['concept_id'] for x in items}) > 1)
+
 # ------------------------------------------------------------------ progress (Gate E)
 
 def test_progress_separates_seen_unseen_real_and_repeat_errors(seeded):
@@ -144,18 +175,18 @@ def test_progress_separates_seen_unseen_real_and_repeat_errors(seeded):
     rep(seeded, 'demo-dive-count-2', 'A')                        # unseen, repeat error
     train.log_real(seeded, ['phantom_dive_counter_math'], 'error', error_tags=['no_explicit_count'])
     s = {x['id']: x for x in stats.concept_stats(seeded, NOW)}['phantom_dive_counter_math']
-    assert s['tiers']['unseen'] == {'ok': 0, 'error': 2, 'undefined': 0}
-    assert s['tiers']['seen'] == {'ok': 1, 'error': 0, 'undefined': 0}
-    assert s['tiers']['real'] == {'ok': 0, 'error': 1, 'undefined': 0}
-    assert s['repeat']['unseen'] == {'later': 1, 'errors': 1} and s['repeat']['real'] == {'later': 1, 'errors': 1}
-    assert s['status'] == 'repeat error in real games'
+    assert s['tiers']['unseen'] == {'ok': 0, 'error': 2, 'self_ok': 0, 'self_error': 0, 'undefined': 0}
+    assert s['tiers']['seen'] == {'ok': 1, 'error': 0, 'self_ok': 0, 'self_error': 0, 'undefined': 0}
+    assert s['tiers']['real'] == {'ok': 0, 'error': 0, 'self_ok': 0, 'self_error': 1, 'undefined': 0}
+    assert s['repeat']['unseen'] == {'later': 1, 'errors': 1} and s['repeat']['real'] == {'later': 0, 'errors': 0}
+    assert s['status'] == 'active leak (verified)'
     p = stats.progress(seeded, NOW)
     assert ('no_explicit_count', 1) in p['error_tags']
     assert 'mastery' not in json.dumps(p).lower() and '%' not in json.dumps(p)
 
 
 def test_no_data_means_insufficient_evidence(seeded):
-    assert {s['status'] for s in stats.concept_stats(seeded, NOW)} == {'insufficient evidence'}
+    assert {s['status'] for s in stats.concept_stats(seeded, NOW)} == {'insufficient verified evidence'}
 
 
 def test_memory_alone_never_claims_transfer(seeded):

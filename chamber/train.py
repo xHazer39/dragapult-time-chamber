@@ -149,8 +149,13 @@ def reveal(conn, aid):
             'graded': a['correct'] is not None}
 
 
-def review(conn, aid, ratings: dict, self_outcome=None, error_tags=(), note='', when=None):
-    """Concept recall -> FSRS. Self-reported outcome only where evidence did not grade the attempt."""
+def review(conn, aid, ratings: dict, self_outcome=None, error_tags=(), note='', when=None, error_concepts=()):
+    """Concept recall -> FSRS. Self outcomes are stored, but remain weak evidence.
+
+    Error attribution is deliberately conservative: on multi-concept cases, only concepts
+    explicitly selected as causal receive the error signal. Leaving attribution blank means
+    "unsure" rather than blaming every linked concept.
+    """
     a = _attempt(conn, aid)
     if not a['answered_at']:
         raise Refused('answer first')
@@ -161,8 +166,28 @@ def review(conn, aid, ratings: dict, self_outcome=None, error_tags=(), note='', 
         raise Refused('rate recall 1-4 for every linked concept')
     if self_outcome not in (None, 'ok', 'error'):
         raise Refused('outcome must be ok, error or empty')
+    selected = set(error_concepts or ())
+    if not selected.issubset(set(concepts)):
+        raise Refused('error_concepts must be linked to this case')
+
     if a['outcome_source'] != 'evidence' and self_outcome:
         conn.execute("UPDATE attempts SET outcome = ?, outcome_source = 'self' WHERE id = ?", (self_outcome, aid))
+        final_outcome = self_outcome
+    else:
+        final_outcome = a['outcome']
+
+    # Root-cause attribution. A single-concept error is unambiguous enough to attribute;
+    # multi-concept errors require an explicit selection, otherwise remain unattributed.
+    if final_outcome == 'error':
+        if len(concepts) == 1:
+            selected = {concepts[0]}
+        if selected:
+            for cid in concepts:
+                conn.execute('UPDATE attempt_concepts SET error_relevant = ? WHERE attempt_id = ? AND concept_id = ?',
+                             (int(cid in selected), aid, cid))
+    elif final_outcome == 'ok':
+        conn.execute('UPDATE attempt_concepts SET error_relevant = 0 WHERE attempt_id = ?', (aid,))
+
     conn.execute('UPDATE attempts SET error_tags = ?, note = ? WHERE id = ?', (dumps(sorted(set(error_tags))), note, aid))
     for k, recall in ratings.items():
         conn.execute('UPDATE attempt_concepts SET recall = ? WHERE attempt_id = ? AND concept_id = ?', (recall, aid, k))
@@ -190,19 +215,35 @@ def memory(stored, when):
             'retrievability': round(FSRS.get_card_retrievability(card, when), 2)}
 
 
-def log_real(conn, concept_ids, outcome=None, note='', source_id=None, error_tags=()):
-    """A real-match (L4) opportunity for one or more concepts, self-labelled."""
+def log_real(conn, concept_ids, outcome=None, note='', source_id=None, error_tags=(), error_concepts=()):
+    """Log an L4 real-match opportunity.
+
+    Real-game outcomes are self-reported and therefore remain weak evidence in analytics.
+    Multi-concept errors are attributed only to explicitly selected root-cause concepts.
+    """
     if not concept_ids:
         raise Refused('name at least one concept')
     if outcome not in (None, 'ok', 'error'):
         raise Refused('outcome must be ok, error or empty')
+    concepts = list(dict.fromkeys(concept_ids))
+    selected = set(error_concepts or ())
+    if not selected.issubset(set(concepts)):
+        raise Refused('error_concepts must be among the logged concepts')
     t = now()
     cur = conn.execute(
         "INSERT INTO attempts (created_at, answered_at, transfer_level, outcome, outcome_source, error_tags, note, "
         "real_source_id) VALUES (?, ?, 'L4', ?, ?, ?, ?, ?)",
         (t, t, outcome, 'self' if outcome else None, dumps(sorted(set(error_tags))), note, source_id or None))
-    for k in concept_ids:
-        conn.execute('INSERT INTO attempt_concepts (attempt_id, concept_id) VALUES (?, ?)', (cur.lastrowid, k))
+    if outcome == 'error' and len(concepts) == 1:
+        selected = {concepts[0]}
+    for k in concepts:
+        relevant = None
+        if outcome == 'ok':
+            relevant = 0
+        elif outcome == 'error' and selected:
+            relevant = int(k in selected)
+        conn.execute('INSERT INTO attempt_concepts (attempt_id, concept_id, error_relevant) VALUES (?, ?, ?)',
+                     (cur.lastrowid, k, relevant))
     conn.commit()
     return cur.lastrowid
 

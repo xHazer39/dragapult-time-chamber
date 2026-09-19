@@ -89,6 +89,8 @@ def test_deck_versions_hash_and_immutability(conn):
         core.add_deck(conn, 'dragapult', [[59, 'Basic Psychic Energy', 'SVE', '5']], 't')
     with pytest.raises(sqlite3.IntegrityError):
         conn.execute("UPDATE deck_versions SET source = 'x'")
+    with pytest.raises(sqlite3.IntegrityError):
+        conn.execute('DELETE FROM deck_versions')
 
 
 def test_seed_loads_and_every_seed_case_is_synthetic(seeded):

@@ -21,7 +21,7 @@ Rival99's Pokémon used an attack."""
 def test_rep_over_http_never_leaks_before_answer(server):
     base, _ = server
     st, s = call(base, 'POST', '/api/sessions', {})
-    assert st == 200 and s['plan']
+    assert st == 200 and s['reps'] > 0 and 'plan' not in s
     st, n = call(base, 'GET', f"/api/sessions/{s['session_id']}/next")
     view = json.dumps(n['case'])
     assert 'evidence' not in view and 'claim' not in view and 'full_record' not in view and 'hint' not in view
@@ -85,6 +85,17 @@ def test_meta_never_exposes_the_api_key(server, monkeypatch):
     st, m = call(base, 'GET', '/api/meta')
     assert 'sk-secret' not in json.dumps(m) and m['coach']['enabled'] is True
 
+
+
+def test_today_and_session_payloads_do_not_leak_concepts(server):
+    base, _ = server
+    st, t = call(base, 'GET', '/api/today')
+    blob = json.dumps(t)
+    assert 'concept_id' not in blob
+    assert 'phantom_dive_counter_math' not in blob
+    assert all(set(i) == {'mode', 'reason'} for i in t['plan'])
+    st, s = call(base, 'POST', '/api/sessions', {})
+    assert 'plan' not in s and s['reps'] > 0
 
 def test_static_and_path_traversal(server):
     import urllib.request

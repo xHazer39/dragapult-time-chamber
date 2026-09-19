@@ -32,6 +32,8 @@ CREATE TABLE IF NOT EXISTS deck_versions (
 );
 CREATE TRIGGER IF NOT EXISTS deck_versions_immutable BEFORE UPDATE ON deck_versions
 BEGIN SELECT RAISE(ABORT, 'deck versions are immutable'); END;
+CREATE TRIGGER IF NOT EXISTS deck_versions_no_delete BEFORE DELETE ON deck_versions
+BEGIN SELECT RAISE(ABORT, 'deck versions are immutable'); END;
 
 CREATE TABLE IF NOT EXISTS raw_sources (
   id INTEGER PRIMARY KEY,
@@ -173,6 +175,7 @@ CREATE TABLE IF NOT EXISTS attempt_concepts (
   attempt_id INTEGER NOT NULL REFERENCES attempts(id),
   concept_id TEXT NOT NULL REFERENCES concepts(id),
   recall INTEGER CHECK (recall BETWEEN 1 AND 4),
+  error_relevant INTEGER CHECK (error_relevant IN (0, 1)),
   PRIMARY KEY (attempt_id, concept_id)
 );
 
@@ -201,6 +204,13 @@ def connect(path=None) -> sqlite3.Connection:
     conn.row_factory = sqlite3.Row
     conn.execute('PRAGMA foreign_keys = ON')
     conn.executescript(SCHEMA)
+    # Tiny forward migration for pre-hardening databases. CREATE TABLE IF NOT EXISTS
+    # does not add columns to an existing table.
+    cols = {r[1] for r in conn.execute('PRAGMA table_info(attempt_concepts)')}
+    if 'error_relevant' not in cols:
+        conn.execute('ALTER TABLE attempt_concepts ADD COLUMN error_relevant INTEGER '
+                     'CHECK (error_relevant IN (0, 1))')
+        conn.commit()
     return conn
 
 

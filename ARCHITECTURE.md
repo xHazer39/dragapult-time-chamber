@@ -67,3 +67,10 @@ strong but no real game has been logged recently, Today recommends going to play
 - A case's error counts against every concept linked to it. Per-concept attribution is not collected in V1.
 - Case edits after promotion are not supported. Add evidence (append-only) instead, or promote a new case.
 - The `stale` status exists, but deck changes do not set it automatically. Today warns instead.
+
+## Hardening invariants
+
+- Self-reported outcomes are weak evidence: they are shown separately from evidence-backed outcomes and cannot certify transfer.
+- Multi-concept errors are attributed only to concepts explicitly selected as causal; uncertainty stays unattributed.
+- A high-priority leak may receive several different reps in one session, capped and non-consecutive when alternatives exist.
+- Exact concept identity is not sent in Today/session payloads before the case reveal.
