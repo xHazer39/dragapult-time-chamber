@@ -95,6 +95,18 @@ Deck lists are immutable. The hash covers the exact 60-card list, so a one-card 
 `my_list.txt` is a PTCGL export (`3 Dragapult ex TWM 130` per line). Cases record the deck version they were written
 for. Today warns when active cases belong to an older version. Concepts carry across versions.
 
+## Corpus
+
+`corpus/` holds the research artifacts (sources, claims, concepts, positions, decklists, rules and card facts).
+It is not the database: nothing in it reaches training until it is imported. Check it with
+
+```sh
+python corpus/check.py
+```
+
+It resolves every id, claim, source, deck and concept reference, applies the Chamber's own evidence rules to the
+corpus evidence, and re-verifies the counts the corpus documents declare. Exit code 1 if anything is wrong.
+
 ## Tests
 
 ```sh

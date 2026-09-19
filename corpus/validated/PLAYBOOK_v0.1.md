@@ -1,6 +1,7 @@
 # Dragapult playbook v0.1
 
-Thirteen principles extracted from the sources in `sources/source_registry.jsonl`. Every one is **HEURISTIC**:
+**14** principles extracted from the sources in `sources/source_registry.jsonl`, grouped into the 13 Concepts in
+`extracted/concepts.json` (principles 1 and 2 are both about the Budew lock war). Every one is **HEURISTIC**:
 an elite player or analyst said it, in a stated context. None of it is proven, and none of it grades a move by itself.
 Claim ids in brackets point to `extracted/claims.jsonl`, where each has a verbatim quote and a timestamp.
 

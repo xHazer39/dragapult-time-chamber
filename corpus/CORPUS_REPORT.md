@@ -22,14 +22,14 @@ the list and the metagame. The champion's own written guide is **paid and was no
 
 ## 3. Concepts
 
-Thirteen, in `extracted/concepts.json`, each with supporting claim ids: budew_lock_war, delay_engagement_until_ready,
+Concepts: **13**, in `extracted/concepts.json`, each with supporting claim ids: budew_lock_war, delay_engagement_until_ready,
 risky_ruins_damage_loop, attack_when_no_response_ko, check_opponent_counterplay, target_selection_by_denial,
 read_hand_by_omission, count_opponent_outs, preempt_resource_denial, threaten_win_next_turn, rotate_damaged_dragapult,
 resource_count_discipline, avoid_feeding_opponent_draw. Human version: `validated/PLAYBOOK_v0.1.md`.
 
 ## 4. Matches
 
-Six registered in `sources/pro_matches.jsonl`: Worlds final (Hedrick–Cassiraga), Worlds top 4 (Hedrick–Tonisson),
+Pro matches: **6** registered in `sources/pro_matches.jsonl`: Worlds final (Hedrick–Cassiraga), Worlds top 4 (Hedrick–Tonisson),
 Worlds R11 (Hedrick–Koyama), LA Regionals final and top 4, and the PokéRadar top-4 "Masterclass" (captions not
 retrievable). Transcripts with timestamps are stored for five of them.
 
@@ -39,6 +39,10 @@ retrievable). Transcripts with timestamps are stored for five of them.
 - Candidate positions: **12** (target was 30–40 — see §9).
 - Chamber-ready DecisionCases: **11** (target was 15–20).
 - Rules facts: **23**. Card facts: **24** (every distinct card in the deck).
+- Playbook principles: **14** (`validated/PLAYBOOK_v0.1.md`), grouped into the 13 Concepts.
+- Registered sources: **8** (`sources/source_registry.jsonl`).
+
+`python corpus/check.py` re-verifies every count above, and every id/claim/source/deck reference, against the files.
 
 ## 7. Evidence breakdown
 
