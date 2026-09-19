@@ -46,7 +46,7 @@ def do_rep(page, choice_index=0, recall='Good', outcome=None):
 
 def test_demo_session_full_rep_and_next(page):
     page.goto(page.base + '/#today')
-    page.wait_for_selector('#plan li')
+    page.wait_for_selector('#plan')
     assert 'SYNTHETIC' not in page.inner_text('#plan')
     page.click('#start')
     page.wait_for_selector('#position')
@@ -68,11 +68,12 @@ def test_error_becomes_a_leak_and_is_scheduled(page):
     do_rep(page, choice_index=0, recall='Again')            # A is wrong per FACT
     assert 'Contradicted by graded evidence' in page.inner_text('#verdict')
     page.goto(page.base + '/#today')
-    page.wait_for_selector('#plan li')
-    first = page.locator('#plan li').first.inner_text()
-    assert 'exploit' in first and 'errors' in first
-    assert 'phantom_dive' not in page.inner_text('#plan')         # the plan never names the concept
-    assert 'Phantom Dive counter math' not in page.inner_text('main')  # Today must not prime the upcoming case
+    page.wait_for_selector('#plan')
+    main = page.inner_text('main').lower()
+    # Today must not prime: no mode, no leak, no concept, no scheduler reason.
+    for word in ('exploit', 'coverage', 'probe', 'leak', 'phantom_dive', 'phantom dive counter math'):
+        assert word not in main, word
+    assert 'reps' in page.inner_text('#plan')
     page.click('#start')
     page.wait_for_selector('#position')
     assert 'Knocks Out the most Benched' in page.inner_text('#prompt')   # demo-dive-count-2: unseen, same concept

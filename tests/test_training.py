@@ -196,3 +196,64 @@ def test_memory_alone_never_claims_transfer(seeded):
     rep(seeded, 'demo-dive-count', 'B')           # L0 success again
     s = {x['id']: x for x in stats.concept_stats(seeded, NOW)}['phantom_dive_counter_math']
     assert s['status'] in ('insufficient evidence', 'known, not yet shown on unseen positions')
+
+
+# ------------------------------------------------------------------ one rep trains one concept
+
+def _rep_for(conn, case_id, concept_id, recall=3):
+    """A session whose plan puts this case in for exactly this concept, then one full rep."""
+    sid = train.start_session(conn, [{'case_id': case_id, 'concept_id': concept_id,
+                                      'mode': 'exploit', 'reason': 'test'}])
+    case = core.get_case(conn, case_id)
+    aid = train.start_attempt(conn, case_id, sid, {f: 'x' for f in case['requires']})
+    train.answer(conn, aid, case['choices'][0]['key'])
+    train.review(conn, aid, {concept_id: recall}, when=NOW)
+    return sid, aid
+
+
+def test_rep_preserves_the_scheduled_target_concept(seeded):
+    # demo-recon-first links two concepts; get_case orders them by id, so the target is NOT the first one.
+    _, aid = _rep_for(seeded, 'demo-recon-first', 'resource_preservation')
+    assert seeded.execute('SELECT target_concept_id FROM attempts WHERE id = ?', (aid,)).fetchone()[0] \
+        == 'resource_preservation'
+    # both concepts stay linked to the attempt: the reveal and root-cause attribution still need them
+    assert {r[0] for r in seeded.execute('SELECT concept_id FROM attempt_concepts WHERE attempt_id = ?', (aid,))} \
+        == {'information_before_commitment', 'resource_preservation'}
+
+
+def test_only_the_target_concept_receives_an_fsrs_review(seeded):
+    _, aid = _rep_for(seeded, 'demo-recon-first', 'resource_preservation')
+    assert [r[0] for r in seeded.execute('SELECT concept_id FROM concept_reviews')] == ['resource_preservation']
+    cards = dict(seeded.execute("SELECT id, fsrs_card FROM concepts WHERE id IN "
+                                "('resource_preservation', 'information_before_commitment')"))
+    assert cards['resource_preservation'] and cards['information_before_commitment'] is None
+
+
+def test_review_requires_the_target_rating(seeded):
+    sid = train.start_session(seeded, [{'case_id': 'demo-recon-first', 'concept_id': 'resource_preservation',
+                                        'mode': 'exploit', 'reason': 'test'}])
+    case = core.get_case(seeded, 'demo-recon-first')
+    aid = train.start_attempt(seeded, 'demo-recon-first', sid, {f: 'x' for f in case['requires']})
+    train.answer(seeded, aid, case['choices'][0]['key'])
+    with pytest.raises(Refused, match='rate recall'):                       # rated the wrong concept
+        train.review(seeded, aid, {'information_before_commitment': 3}, when=NOW)
+    with pytest.raises(Refused, match='rate recall'):                       # rated a concept not on the case
+        train.review(seeded, aid, {'resource_preservation': 3, 'two_prize_bench_liability': 3}, when=NOW)
+
+
+def test_outside_a_session_the_target_is_the_first_linked_concept(seeded):
+    aid, _ = rep(seeded, 'demo-recon-first', 'A')
+    assert seeded.execute('SELECT target_concept_id FROM attempts WHERE id = ?', (aid,)).fetchone()[0] \
+        == 'information_before_commitment'
+    assert [r[0] for r in seeded.execute('SELECT concept_id FROM concept_reviews')] == ['information_before_commitment']
+
+
+def test_mode_and_reason_are_withheld_until_the_reveal(seeded):
+    items = scheduler.plan(seeded, NOW)
+    sid = train.start_session(seeded, items)
+    n = train.next_item(seeded, sid)
+    assert set(n['item']) == {'case_id'}                                    # nothing to prime the decision
+    case = core.get_case(seeded, n['case']['id'])
+    aid = train.start_attempt(seeded, case['id'], sid, {f: 'x' for f in case['requires']})
+    r = train.answer(seeded, aid, case['choices'][0]['key'])
+    assert r['item']['mode'] in ('exploit', 'coverage', 'probe') and r['item']['reason']

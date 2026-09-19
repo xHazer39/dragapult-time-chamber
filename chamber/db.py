@@ -146,6 +146,7 @@ CREATE TABLE IF NOT EXISTS attempts (
   id INTEGER PRIMARY KEY,
   case_id TEXT REFERENCES decision_cases(id),   -- NULL for a real-game (L4) opportunity
   case_version INTEGER,
+  target_concept_id TEXT REFERENCES concepts(id),  -- the ONE concept this rep trains (FSRS updates only it)
   session_id INTEGER REFERENCES sessions(id),
   created_at TEXT NOT NULL,
   plan TEXT NOT NULL DEFAULT '{{}}',
@@ -210,6 +211,11 @@ def connect(path=None) -> sqlite3.Connection:
     if 'error_relevant' not in cols:
         conn.execute('ALTER TABLE attempt_concepts ADD COLUMN error_relevant INTEGER '
                      'CHECK (error_relevant IN (0, 1))')
+        conn.commit()
+    cols = {r[1] for r in conn.execute('PRAGMA table_info(attempts)')}
+    if 'target_concept_id' not in cols:
+        # Old attempts keep NULL: they predate the one-target-concept rule and are read as "unknown target".
+        conn.execute('ALTER TABLE attempts ADD COLUMN target_concept_id TEXT REFERENCES concepts(id)')
         conn.commit()
     return conn
 

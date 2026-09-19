@@ -2,8 +2,12 @@
 
 FSRS schedules CONCEPT MEMORY only. It never measures Pokémon skill.
 
+One rep trains ONE concept. The scheduler picks it, the attempt stores it as target_concept_id, and only that
+concept's FSRS memory is reviewed. The other concepts linked to the case stay linked (for the reveal and for
+root-cause attribution) but are never scheduled by this rep.
+
 Rating mapping (V1, deliberately simple, adjust here):
-  - the player self-rates recall of each linked concept after the reveal: 1 Again, 2 Hard, 3 Good, 4 Easy;
+  - the player self-rates recall of the target concept after the reveal: 1 Again, 2 Hard, 3 Good, 4 Easy;
   - a hint caps the rating at Hard;
   - latency, decision correctness and retries never change the rating (they are stored separately);
   - a retry (same case again within 12 hours) never updates FSRS.
@@ -54,8 +58,8 @@ def next_item(conn, session_id):
         if item['case_id'] not in done:
             case = get_case(conn, item['case_id'])
             if case and case['status'] != 'retired':
-                # the concept stays server-side until the reveal: naming it would be a hint
-                return {'item': {k: item[k] for k in ('case_id', 'mode', 'reason')}, 'case': player_view(case)}
+                # concept, mode and reason all stay server-side until the reveal: they would prime the answer
+                return {'item': {'case_id': item['case_id']}, 'case': player_view(case)}
     if not s['ended_at']:
         summary = row(conn.execute(
             "SELECT COUNT(*) reps, SUM(outcome = 'error') errors, SUM(outcome = 'ok') ok, "
@@ -67,6 +71,27 @@ def next_item(conn, session_id):
 
 
 # --------------------------------------------------------------------------- attempts
+
+def scheduled_concept(conn, session_id, case_id):
+    """The concept the scheduler put this case in the session for. None outside a session."""
+    if not session_id:
+        return None
+    s = conn.execute('SELECT plan FROM sessions WHERE id = ?', (session_id,)).fetchone()
+    for item in json.loads(s[0]) if s else []:
+        if item['case_id'] == case_id:
+            return item.get('concept_id')
+    return None
+
+
+def target_concept(conn, case, session_id):
+    """One concept per rep. The scheduler decides; outside a session, the case's first concept.
+
+    The client never sends this: naming the target before the answer would be a hint.
+    """
+    linked = [k['id'] for k in case['concepts']]
+    scheduled = scheduled_concept(conn, session_id, case['id'])
+    return scheduled if scheduled in linked else linked[0]
+
 
 def start_attempt(conn, case_id, session_id, plan) -> int:
     """Locks the declared plan. There is no endpoint to change it afterwards."""
@@ -85,10 +110,11 @@ def start_attempt(conn, case_id, session_id, plan) -> int:
     retries = conn.execute('SELECT COUNT(*) FROM attempts WHERE case_id = ? AND answered_at >= ?',
                            (case_id, since)).fetchone()[0]
     cur = conn.execute(
-        'INSERT INTO attempts (case_id, case_version, session_id, created_at, plan, plan_locked_at, retries, '
-        'seen_before, transfer_level, difficulty, criticality) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
-        (case_id, case['version'], session_id, t, dumps(plan), t, retries, int(seen > 0),
-         'L0' if seen else case['transfer_level'], case['difficulty'], case['criticality']))
+        'INSERT INTO attempts (case_id, case_version, target_concept_id, session_id, created_at, plan, '
+        'plan_locked_at, retries, seen_before, transfer_level, difficulty, criticality) '
+        'VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',
+        (case_id, case['version'], target_concept(conn, case, session_id), session_id, t, dumps(plan), t, retries,
+         int(seen > 0), 'L0' if seen else case['transfer_level'], case['difficulty'], case['criticality']))
     for k in case['concepts']:
         conn.execute('INSERT INTO attempt_concepts (attempt_id, concept_id) VALUES (?, ?)', (cur.lastrowid, k['id']))
     conn.commit()
@@ -145,8 +171,13 @@ def reveal(conn, aid):
     a['coach'] = json.loads(a['coach']) if a['coach'] else None
     a['recall'] = {r[0]: r[1] for r in conn.execute(
         'SELECT concept_id, recall FROM attempt_concepts WHERE attempt_id = ?', (aid,))}
+    # mode/reason are withheld until the reveal: "this rep targets your leak" would prime the decision.
+    item = None
+    if a['session_id']:
+        s = conn.execute('SELECT plan FROM sessions WHERE id = ?', (a['session_id'],)).fetchone()
+        item = next((i for i in (json.loads(s[0]) if s else []) if i['case_id'] == a['case_id']), None)
     return {'attempt': a, 'case': case, 'disputes': disputes(case['evidence']),
-            'graded': a['correct'] is not None}
+            'graded': a['correct'] is not None, 'item': item}
 
 
 def review(conn, aid, ratings: dict, self_outcome=None, error_tags=(), note='', when=None, error_concepts=()):
@@ -162,8 +193,10 @@ def review(conn, aid, ratings: dict, self_outcome=None, error_tags=(), note='', 
     concepts = [r[0] for r in conn.execute('SELECT concept_id FROM attempt_concepts WHERE attempt_id = ?', (aid,))]
     if conn.execute('SELECT 1 FROM attempt_concepts WHERE attempt_id = ? AND recall IS NOT NULL', (aid,)).fetchone():
         raise Refused('already reviewed')
-    if sorted(ratings) != sorted(concepts) or any(r not in (1, 2, 3, 4) for r in ratings.values()):
-        raise Refused('rate recall 1-4 for every linked concept')
+    target = a['target_concept_id'] or concepts[0]
+    if (target not in ratings or not set(ratings) <= set(concepts)
+            or any(r not in (1, 2, 3, 4) for r in ratings.values())):
+        raise Refused('rate recall 1-4 for the concept this rep trained')
     if self_outcome not in (None, 'ok', 'error'):
         raise Refused('outcome must be ok, error or empty')
     selected = set(error_concepts or ())
@@ -191,8 +224,9 @@ def review(conn, aid, ratings: dict, self_outcome=None, error_tags=(), note='', 
     conn.execute('UPDATE attempts SET error_tags = ?, note = ? WHERE id = ?', (dumps(sorted(set(error_tags))), note, aid))
     for k, recall in ratings.items():
         conn.execute('UPDATE attempt_concepts SET recall = ? WHERE attempt_id = ? AND concept_id = ?', (recall, aid, k))
-        if a['retries'] == 0:
-            fsrs_review(conn, k, rating_for(recall, bool(a['hint_used'])), aid, when)
+    # One rep, one memory review: only the target concept. Other linked concepts stay unscheduled by this rep.
+    if a['retries'] == 0:
+        fsrs_review(conn, target, rating_for(ratings[target], bool(a['hint_used'])), aid, when)
     conn.commit()
 
 

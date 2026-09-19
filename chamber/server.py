@@ -25,17 +25,16 @@ def utcnow():
     return datetime.now(timezone.utc)
 
 
-def _public_plan(items):
-    """Training plan safe to expose before the rep: no case/concept identifiers."""
-    return [{'mode': i['mode'], 'reason': i['reason']} for i in items]
-
-
 def _public_today(data):
-    """Hide exact concept names/ids before the session so Today cannot prime the answer."""
+    """Today is neutral: how much to train, never what it targets.
+
+    Before the decision the player must not learn that a rep is an exploit rep, which leak it is
+    about or which concept is hidden. Scheduler mode and reason appear only after the reveal; leak
+    detail lives in Progress.
+    """
     return {
-        **{k: v for k, v in data.items() if k not in ('plan', 'leaks', 'due')},
-        'plan': _public_plan(data['plan']),
-        'leaks': [{'recent': x['recent'], 'status': x['status']} for x in data['leaks']],
+        **{k: v for k, v in data.items() if k not in ('plan', 'leaks', 'due', 'config')},
+        'reps': len(data['plan']),
         'due_count': len(data['due']),
     }
 

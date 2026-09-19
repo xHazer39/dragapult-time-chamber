@@ -87,15 +87,19 @@ def test_meta_never_exposes_the_api_key(server, monkeypatch):
 
 
 
-def test_today_and_session_payloads_do_not_leak_concepts(server):
+def test_today_and_session_payloads_do_not_prime_the_answer(server):
     base, _ = server
     st, t = call(base, 'GET', '/api/today')
     blob = json.dumps(t)
-    assert 'concept_id' not in blob
-    assert 'phantom_dive_counter_math' not in blob
-    assert all(set(i) == {'mode', 'reason'} for i in t['plan'])
+    assert 'concept_id' not in blob and 'phantom_dive_counter_math' not in blob
+    # Today says how much to train and nothing about what it targets.
+    assert t['reps'] > 0 and 'plan' not in t and 'leaks' not in t
+    for word in ('exploit', 'coverage', 'probe', 'leak', 'error'):
+        assert word not in blob.lower(), word
     st, s = call(base, 'POST', '/api/sessions', {})
     assert 'plan' not in s and s['reps'] > 0
+    st, n = call(base, 'GET', f"/api/sessions/{s['session_id']}/next")
+    assert set(n['item']) == {'case_id'} and 'mode' not in json.dumps(n)
 
 def test_static_and_path_traversal(server):
     import urllib.request

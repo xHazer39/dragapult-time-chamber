@@ -32,9 +32,11 @@ Needs Python 3.11 or newer. The only runtime dependency is `fsrs` (py-fsrs).
    decision time. You also set choices and their completeness, unknowns, criticality with its source, concepts and
    evidence.
 3. **Validate → DecisionCase.** Promotion refuses anything that breaks an invariant, and gives the reason.
-4. **Training.** Today shows a recommended session and why each rep is in it. For each case you lock your plan, then
-   decide, then see the evidence ledger, the uncertainty and the concept. Last, you rate how well you recalled each
-   concept.
+4. **Training.** Today shows only how many reps are recommended — never what they target, because reading "this rep
+   is about your spread-damage leak" before deciding would answer the question for you. For each case you lock your
+   plan, then decide, then see the evidence ledger, the uncertainty, why the scheduler chose this rep and the
+   concepts. Each rep trains **one** target concept, and that is the only concept whose recall you rate and whose
+   FSRS memory is rescheduled; the other concepts linked to the case are shown but stay unscheduled.
 5. **Transfer.** The scheduler prefers positions you have not seen. In Progress, log real-match opportunities (L4) for a
    concept. The main signal is whether an error recurs after its first occurrence, split by drills and real games.
 

@@ -64,7 +64,7 @@ strong but no real game has been logged recently, Today recommends going to play
 
 - Correctness also has a self-reported outcome (`outcome_source = 'self'`) for ungraded cases. Without it, repeat-error
   tracking would be empty on HEURISTIC-only cases. It is always labelled and never overrides evidence.
-- A case's error counts against every concept linked to it. Per-concept attribution is not collected in V1.
+- Per-concept error attribution is collected: a multi-concept error counts only against concepts named as causal.
 - Case edits after promotion are not supported. Add evidence (append-only) instead, or promote a new case.
 - The `stale` status exists, but deck changes do not set it automatically. Today warns instead.
 
@@ -73,4 +73,8 @@ strong but no real game has been logged recently, Today recommends going to play
 - Self-reported outcomes are weak evidence: they are shown separately from evidence-backed outcomes and cannot certify transfer.
 - Multi-concept errors are attributed only to concepts explicitly selected as causal; uncertainty stays unattributed.
 - A high-priority leak may receive several different reps in one session, capped and non-consecutive when alternatives exist.
-- Exact concept identity is not sent in Today/session payloads before the case reveal.
+- Exact concept identity is not sent in Today/session payloads before the case reveal. Neither is the scheduler's
+  mode or reason, nor any leak detail: Today is neutral, and all of it arrives with the reveal (leaks live in Progress).
+- One rep trains one concept. The scheduler's choice is stored on the attempt as `target_concept_id`, and it is the
+  only concept whose FSRS memory that rep reviews. Other concepts on the case stay linked for the reveal and for
+  root-cause attribution.

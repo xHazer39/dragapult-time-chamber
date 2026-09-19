@@ -8,7 +8,6 @@ const S = { session: null, reps: 0, done: [], item: null, case: null, phase: nul
 const PLAN_LABELS = { objective: 'Objective of this turn', prize_map: 'Prize map · next turns',
   opponent_plan: "Opponent's likely plan", preserve: 'Key resource to preserve' };
 const RECALL = [[1, 'Again'], [2, 'Hard'], [3, 'Good'], [4, 'Easy']];
-const MODES = ['exploit', 'coverage', 'probe'];
 const GRADING = ['FACT', 'COACH_GOLD', 'CONSENSUS'];
 
 const ICONS = {
@@ -108,19 +107,15 @@ const today = () => new Date().toLocaleDateString('en-GB', { weekday: 'long', da
 // ------------------------------------------------------------------ TODAY
 async function viewToday() {
   const t = await api('GET', '/api/today');
-  setCount('count-today', t.plan.length ? `${t.plan.length} reps` : '');
+  setCount('count-today', t.reps ? `${t.reps} reps` : '');
   const box = errorBox();
   const startSession = async () => {
     try { const s = await api('POST', '/api/sessions');
       Object.assign(S, { session: s.session_id, reps: s.reps, done: [], case: null, phase: null, log: [], retry: 0 });
       location.hash = '#case'; } catch (e) { fail(box, e); } };
-  // Grouped by mode and never in rep order: the order would tell which rep targets a leak.
-  const groups = MODES.map((m) => ({ m, items: t.plan.filter((i) => i.mode === m) })).filter((g) => g.items.length);
+  // Today says how much to train, never what it targets: "exploit ×3" or a leak reason read
+  // before the decision is priming. Mode and reason appear after the reveal, leaks in Progress.
   const logReal = () => { location.hash = '#progress/log'; };
-  const mix = h('div', { class: 'mix', 'aria-hidden': 'true' }, groups.map((g) => h('i', { class: `m-${g.m}`, style: `flex:${g.items.length}` })));
-  const reasons = h('ul', { class: 'reasons', id: 'plan' }, groups.map((g) => h('li', {},
-    badge(`${g.m} ×${g.items.length}`, g.m === 'exploit' ? 'accent' : ''),
-    [...new Set(g.items.map((i) => i.reason.replace(/ \(no \w+ candidate\)$/, '')))].join(' · '))));
   let hero;
   if (t.play.play) {
     hero = h('section', { class: 'card xl hero', id: 'real-evidence' },
@@ -128,15 +123,15 @@ async function viewToday() {
         h('div', { class: 'row' }, icon('flag', 18), h('div', { class: 'title' }, 'Go play competitive matches')),
         h('p', { class: 'secondary', style: 'margin:0;max-width:640px' }, t.play.reason)),
       h('div', { class: 'cta' }, btn('Log real match', { cls: 'primary', ic: 'flag', key: 'L', on: logReal }),
-        t.plan.length ? btn(`Train anyway · ${t.plan.length} reps`, { id: 'start', cls: 'ghost', on: startSession }) : null, box));
+        t.reps ? btn(`Train anyway · ${t.reps} reps`, { id: 'start', cls: 'ghost', on: startSession }) : null, box));
   } else {
     hero = h('section', { class: 'card xl hero' },
       h('div', { class: 'stack' }, h('div', { class: 'overline', style: 'color:var(--accent-text)' }, 'Highest-value training now'),
-        t.plan.length ? [h('div', { class: 'row', style: 'align-items:baseline;gap:12px' }, h('span', { class: 'metric' }, `${t.plan.length} reps`),
-          h('span', { class: 'small secondary' }, 'plan fixed when you start')), mix, reasons]
+        t.reps ? h('div', { class: 'row', id: 'plan', style: 'align-items:baseline;gap:12px' }, h('span', { class: 'metric' }, `${t.reps} reps`),
+          h('span', { class: 'small secondary' }, 'plan fixed when you start'))
           : h('p', { class: 'secondary', style: 'margin:0' }, 'Nothing worth drilling right now.'),
-        h('div', { class: 'row caption' }, icon('lock', 14), 'Concepts stay hidden until you answer, so every rep also tests recognition.')),
-      h('div', { class: 'cta' }, btn('Start session', { id: 'start', cls: `primary lg${t.plan.length ? ' glow' : ''}`, ic: 'play', key: '↵', on: startSession, disabled: !t.plan.length }), box));
+        h('div', { class: 'row caption' }, icon('lock', 14), 'What each rep targets stays hidden until you answer, so every rep also tests recognition.')),
+      h('div', { class: 'cta' }, btn('Start session', { id: 'start', cls: `primary lg${t.reps ? ' glow' : ''}`, ic: 'play', key: '↵', on: startSession, disabled: !t.reps }), box));
   }
   const realOk = !t.play.reason.startsWith('No real-match');
   const older = t.deck.cases_for_older_versions;
@@ -153,17 +148,9 @@ async function viewToday() {
       h('section', { class: 'card' }, h('div', { class: 'overline' }, 'Deck version'),
         h('div', { class: 'row' }, icon('layers'), h('span', { class: 'mono' }, t.deck.label)),
         older ? statusView('known', `${older} case(s) written for an older deck version · check before trusting`)
-          : statusView('no current', 'All active cases match this version'))),
-    h('section', { class: 'card', style: 'gap:0;padding-bottom:8px' },
-      h('div', { class: 'row', style: 'padding-bottom:10px' }, h('h2', {}, 'Active leaks'), h('span', { class: 'spacer' }),
-        h('span', { class: 'row caption' }, icon('lock', 14), 'Names stay hidden before the rep · full detail in Progress')),
-      t.leaks.length ? h('div', { class: 'divided' }, t.leaks.map((l, i) => h('div', { class: 'leak-row' },
-        h('div', { class: 'who' }, statusView(l.status, `Leak ${i + 1}`)),
-        h('span', { class: 'secondary' }, l.status),
-        h('span', { class: 'spacer' }),
-        l.recent.n ? h('span', { class: 'tabular' }, `${l.recent.errors}/${l.recent.n} recent verified errors`) : null,
-        l.recent.self_n ? h('span', { class: 'tabular warn' }, `${l.recent.self_errors}/${l.recent.self_n} self-reported`) : null)))
-        : empty('today', 'No active leak recorded', 'Coverage and probe reps keep looking for leaks nobody has recorded. A real-match error logged in Progress will appear here.')));
+          : statusView('no current', 'All active cases match this version'))));
+  // Leaks are deliberately absent from Today: reading them just before a session primes the answer.
+  // Progress shows every leak in full, with its denominators.
 }
 
 // ------------------------------------------------------------------ CASE
@@ -171,7 +158,7 @@ async function loadNext() {
   const n = await api('GET', `/api/sessions/${S.session}/next`);
   if (n.done) { Object.assign(S, { case: null, phase: 'done' }); return; }
   if (!S.done.includes(n.case.id)) S.done.push(n.case.id);
-  Object.assign(S, { case: n.case, item: n.item, phase: 'plan', attemptId: null, plan: null, reveal: null, retry: 0 });
+  Object.assign(S, { case: n.case, phase: 'plan', attemptId: null, plan: null, reveal: null, retry: 0 });
 }
 
 function focusBar() {
@@ -180,8 +167,8 @@ function focusBar() {
     S.session ? [h('span', { class: 'tabular' }, `Rep ${i} of ${S.reps}${S.phase === 'reveal' ? ' · Review' : ''}`),
       h('div', { class: 'ticks', 'aria-hidden': 'true' }, Array.from({ length: S.reps }, (_, k) => h('i', { class: k < i - 1 ? 'done' : k === i - 1 ? 'now' : '' })))]
       : h('span', {}, `Single case${S.phase === 'reveal' ? ' · Review' : ''}`),
-    // The training mode is shown only after the reveal: knowing a rep targets a leak biases the decision.
-    S.phase === 'reveal' && S.item ? badge(S.item.mode, S.item.mode === 'exploit' ? 'accent' : '') : null,
+    // The training mode arrives with the reveal only: knowing a rep targets a leak biases the decision.
+    S.phase === 'reveal' && S.reveal?.item ? badge(S.reveal.item.mode, S.reveal.item.mode === 'exploit' ? 'accent' : '') : null,
     h('span', { class: 'spacer' }),
     S.phase === 'answer' ? h('span', { class: 'row caption' }, icon('clock', 14), h('span', { id: 'timer', class: 'tabular' }, '0:00'), 'since lock') : null,
     h('span', { class: 'row caption' }, kbd('Esc'), 'Exit focus'));
@@ -289,7 +276,7 @@ function revealView(r) {
       h('div', { class: 'stack', style: 'gap:6px' }, h('div', { class: 'overline' }, 'Your line'),
         h('div', { class: 'title' }, chosen ? `${chosen.key}.  ${chosen.text}` : `Other line: ${a.other_text}`),
         h('span', { class: 'small secondary tabular' }, metaLine),
-        S.item ? h('span', { class: 'caption' }, `Why this rep: ${S.item.mode} · ${S.item.reason}`) : null),
+        r.item ? h('span', { class: 'caption' }, `Why this rep: ${r.item.mode} · ${r.item.reason}`) : null),
       h('div', { class: 'stack', style: 'gap:8px' }, h('div', { class: 'overline' }, 'Outcome'), verdict(r),
         r.disputes.length ? h('div', { id: 'disputes', class: 'row small warn' }, icon('alert', 14), `Evidence disagrees on choice ${r.disputes.join(', ')} — kept, not resolved.`) : null)),
     h('div', { class: 'review-grid' },
@@ -342,7 +329,10 @@ function coachBox(r) {
 
 function reviewForm(r) {
   const c = r.case, box = errorBox();
-  const done = Object.values(r.attempt.recall).every((x) => x != null);
+  // One rep trains one concept: only the target is rated and only its memory is rescheduled.
+  const target = c.concepts.find((k) => k.id === r.attempt.target_concept_id) || c.concepts[0];
+  const others = c.concepts.filter((k) => k.id !== target.id);
+  const done = r.attempt.recall[target.id] != null;
   const retry = () => { Object.assign(S, { phase: 'plan', attemptId: null, plan: null, reveal: null, retry: S.retry + 1 }); viewCase(); };
   const after = h('div', { class: 'stack', id: 'after', hidden: !done },
     h('div', { class: 'row' },
@@ -351,19 +341,22 @@ function reviewForm(r) {
       btn('Retry', { id: 'retry', key: 'R', on: retry })),
     h('span', { class: 'caption' }, 'Retry counts as a seen (L0) attempt and never updates memory.'));
   const save = async () => {
-    const ratings = Object.fromEntries(c.concepts.map((k) => [k.id, Number(picked(`recall-${k.id}`))]));
+    const ratings = { [target.id]: Number(picked(`recall-${target.id}`)) };
     const errorConcepts = [...document.querySelectorAll('input[name="error-concept"]:checked')].map((x) => x.value);
     try { await api('POST', `/api/attempts/${r.attempt.id}/review`, { ratings, outcome: picked('self-outcome') || null,
       error_tags: tags(val('error-tags')), error_concepts: errorConcepts });
       S.log.push({ graded: r.graded, correct: r.attempt.correct, self: picked('self-outcome') || null });
       form.hidden = true; after.hidden = false; S.reviewed = true; } catch (e) { fail(box, e); } };
   const form = h('div', { class: 'stack', style: 'gap:20px', hidden: done },
-    c.concepts.map((k) => h('div', { class: 'concept' },
-      h('div', { class: 'row' }, h('h2', {}, k.name), badge(k.skill)),
-      h('span', { class: 'small secondary' }, k.definition),
+    h('div', { class: 'concept', id: 'target-concept' },
+      h('div', { class: 'row' }, h('h2', {}, target.name), badge(target.skill)),
+      h('span', { class: 'small secondary' }, target.definition),
       h('span', { class: 'caption' }, 'Did you recall this before the reveal?'),
-      seg(`recall-${k.id}`, RECALL, null, ['1', '2', '3', '4']))),
-    h('span', { class: 'caption' }, 'Recall schedules memory (FSRS) only. It is not a grade and not a skill score.'),
+      seg(`recall-${target.id}`, RECALL, null, ['1', '2', '3', '4'])),
+    others.length ? h('div', { class: 'stack', id: 'linked-concepts', style: 'gap:4px' },
+      h('span', { class: 'caption' }, 'Also linked to this case · not scheduled by this rep'),
+      h('div', { class: 'row', style: 'gap:6px' }, others.map((k) => badge(k.name)))) : null,
+    h('span', { class: 'caption' }, 'Recall schedules memory (FSRS) for this one concept. It is not a grade and not a skill score.'),
     r.graded ? null : h('div', { class: 'stack', style: 'gap:8px' }, h('span', { class: 'small' }, 'Was your decision an error you want to stop repeating?'),
       seg('self-outcome', [['ok', 'Fine'], ['error', 'Error'], ['', 'Not sure']], '', ['F', 'E', 'N']),
       h('span', { class: 'caption warn' }, 'Self-reported · weak evidence · never overrides graded evidence')),

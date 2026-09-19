@@ -197,13 +197,6 @@ details > summary { cursor: pointer; color: var(--text-secondary); font-size: 13
 .hero { flex-direction: row; gap: 40px; align-items: center; }
 .hero .stack { flex: 1; gap: 16px; }
 .hero .cta { width: 220px; display: flex; flex-direction: column; gap: 10px; }
-.mix { display: flex; gap: 3px; height: 6px; }
-.mix i { border-radius: 2px; }
-.mix .m-exploit { background: var(--accent); } .mix .m-coverage { background: var(--accent); opacity: .55; } .mix .m-probe { background: var(--border-strong); }
-.reasons { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
-.reasons li { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--text-secondary); }
-.leak-row { display: flex; align-items: center; gap: 16px; padding: 12px 0; font-size: 13px; }
-.leak-row .who { width: 110px; flex: none; }
 
 /* ---------------------------------------------------------------- Case */
 .focusbar { display: flex; align-items: center; gap: 16px; font-size: 13px; color: var(--text-secondary); }
