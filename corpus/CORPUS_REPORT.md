@@ -2,6 +2,21 @@
 
 Research only. No application code, no database write, no change to the Chamber.
 
+## 0. Two layers
+
+Since v0.3 the corpus has two layers, distinguished by documentation and by a `layer` field on the new records.
+Nothing was moved or rewritten to create the distinction.
+
+- **ELITE / ADVANCED** — everything described in this report: the Hedrick, Farah, Manley and Smart material, the
+  source registry, the 37 claims, the 12 candidate positions, the 11 advanced DecisionCases, the playbook and the
+  matchup notes. Preserved as it was.
+- **FOUNDATIONS** — `corpus/foundations/`: 6 core Concepts and 12 beginner DecisionCases, described in
+  `foundations/FOUNDATIONS_v0.1.md`. It reuses the elite material wherever the elite material supports a
+  foundation concept; it does not replace it.
+
+Check both layers with `python corpus/check.py`. Import the foundation layer into the Chamber with
+`python corpus/import_foundations.py`.
+
 ## 1. Deck status
 
 - `decks/current_dragapult.json` — the list Gaetano is learning, as he stated it on 2026-09-19 (second, corrected
@@ -41,6 +56,8 @@ retrievable). Transcripts with timestamps are stored for five of them.
 - Rules facts: **23**. Card facts: **24** (every distinct card in the deck).
 - Playbook principles: **14** (`validated/PLAYBOOK_v0.1.md`), grouped into the 13 Concepts.
 - Registered sources: **8** (`sources/source_registry.jsonl`).
+
+- Foundation Concepts: **6**, foundation DecisionCases: **12** (`foundations/`, 2 cases per Concept).
 
 `python corpus/check.py` re-verifies every count above, and every id/claim/source/deck reference, against the files.
 

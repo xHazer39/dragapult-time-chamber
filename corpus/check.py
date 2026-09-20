@@ -271,8 +271,19 @@ def main():
             if n != 2:
                 fail('foundations', f"concept {k['id']} has {n} case(s) as primary concept, expected 2")
         for k in f_concepts:
+            where = f"foundation concept {k['id']}"
             if k.get('primary_skill') not in SKILLS:
-                fail(f"foundation concept {k['id']}", f"primary_skill {k.get('primary_skill')!r} is not a Chamber skill")
+                fail(where, f"primary_skill {k.get('primary_skill')!r} is not a Chamber skill")
+            if k.get('layer') != 'foundation':
+                fail(where, "layer must be 'foundation'")
+            for cl in k.get('supporting_claim_ids', []):
+                if cl not in claim_ids:
+                    fail(where, f'supporting claim {cl!r} does not exist')
+            for fid in k.get('supporting_fact_ids', []):
+                if fid not in fact_ids:
+                    fail(where, f'supporting fact {fid!r} does not exist')
+            if not (k.get('supporting_claim_ids') or k.get('supporting_fact_ids')):
+                fail(where, 'no supporting claim or Tier-0 fact')
 
     check_declared('CORPUS_REPORT.md', [
         (r'Concepts: \*\*(\d+)\*\*', len(concepts), 'concepts'),

@@ -1,0 +1,183 @@
+{
+  "generated_at": "2026-09-20T00:00:00+00:00",
+  "note": "DRAGAPULT FOUNDATIONS v0.1. Six core Concepts for a player still learning both competitive Pokemon TCG and this deck. Five already exist as canonical Chamber concepts and are NOT duplicated; only setup_and_evolution_engine is new. The elite layer in corpus/extracted/concepts.json is unchanged.",
+  "concepts": [
+    {
+      "id": "setup_and_evolution_engine",
+      "name": "Setup and the evolution engine",
+      "definition": "An acceptable early board is the one that still lets Dreepy become Drakloak and Dragapult ex on time, while keeping the draw and search you need to get there. Count what has to be in play by which turn, not how many cards you played.",
+      "primary_skill": "planning",
+      "contexts": [
+        "early_game",
+        "dragapult_mirror"
+      ],
+      "supporting_fact_ids": [
+        "rule_evolution_timing",
+        "rule_first_player_no_supporter",
+        "rule_first_player_no_attack",
+        "rule_bench_max_5",
+        "card_dreepy",
+        "card_drakloak",
+        "card_dragapultex",
+        "card_buddybuddypoffin",
+        "card_ultraball"
+      ],
+      "supporting_claim_ids": [
+        "claim_eeHvbC8bpXQ_9",
+        "claim_eeHvbC8bpXQ_8"
+      ],
+      "evidence_summary": "Tier 0: the evolution timing rule, the first-turn restrictions and the printed HP/search text fix what a legal, on-time development actually is. Hedrick adds that a board that is not developed yet must not be the first to commit, and that the early exchange often decides the mirror.",
+      "confidence": "medium",
+      "open_questions": [
+        "Which turn must Dragapult ex be in play by, per matchup? No source states a number."
+      ],
+      "layer": "foundation",
+      "canonical_in": "new in corpus/foundations",
+      "created_at": "2026-09-20T00:00:00+00:00"
+    },
+    {
+      "id": "information_before_commitment",
+      "name": "Information before commitment",
+      "definition": "Take the free information (look, draw, search results, and the opponent’s answer played out in your head) before the actions that commit resources and cannot be taken back.",
+      "primary_skill": "sequencing",
+      "contexts": [
+        "any_phase"
+      ],
+      "supporting_fact_ids": [
+        "card_drakloak",
+        "card_ultraball",
+        "card_pokpad"
+      ],
+      "supporting_claim_ids": [
+        "claim_eeHvbC8bpXQ_12",
+        "claim_OcmjWWv-daQ_28",
+        "claim_OcmjWWv-daQ_29"
+      ],
+      "evidence_summary": "Recon Directive is free and once per turn; Ultra Ball’s discard is not reversible. Hedrick checks the opponent’s Munkidori + Phantom Dive answer before attacking; Farah reads the hand by omission and by exact hand size before evaluating a line.",
+      "confidence": "high",
+      "open_questions": [
+        "When is the information not worth the tempo? No source addresses it."
+      ],
+      "layer": "foundation",
+      "canonical_in": "chamber/seed.json (already canonical)",
+      "created_at": "2026-09-20T00:00:00+00:00"
+    },
+    {
+      "id": "prize_map_t_plus_2",
+      "name": "Prize map T+2",
+      "definition": "Plan this turn’s Prize cards together with next turn’s, so the two turns finish the game along more than one route. The Knock Out in front of you is one route, not the map.",
+      "primary_skill": "prize_mapping",
+      "contexts": [
+        "mid_game",
+        "endgame"
+      ],
+      "supporting_fact_ids": [
+        "rule_ex_two_prizes",
+        "rule_ko_threshold",
+        "card_dragapultex",
+        "card_bosssorders",
+        "rule_one_supporter_per_turn"
+      ],
+      "supporting_claim_ids": [
+        "claim_eeHvbC8bpXQ_22",
+        "claim_eeHvbC8bpXQ_18"
+      ],
+      "evidence_summary": "Prize counting is arithmetic over printed HP and the two-Prize rule for Pokémon ex. Hedrick judges one of his own lines inferior precisely because it did not threaten a win next turn, and plays so that the opponent’s remaining Boss’s Orders cannot win on the spot.",
+      "confidence": "medium",
+      "open_questions": [
+        "No source gives prize-map arithmetic for the mirror (CORPUS_REPORT §9.4)."
+      ],
+      "layer": "foundation",
+      "canonical_in": "chamber/seed.json (already canonical)",
+      "created_at": "2026-09-20T00:00:00+00:00"
+    },
+    {
+      "id": "phantom_dive_future_ko_setup",
+      "name": "Phantom Dive future-KO setup",
+      "definition": "Counters that do not Knock Out now can still put a target into next turn’s Knock Out range; weigh that against Prizes banked now.",
+      "primary_skill": "damage_allocation",
+      "contexts": [
+        "mid_game"
+      ],
+      "supporting_fact_ids": [
+        "card_dragapultex",
+        "rule_counters_not_damage",
+        "rule_phantom_dive_counters_hit_tera_bench",
+        "rule_ko_threshold",
+        "rule_up_to",
+        "card_munkidori"
+      ],
+      "supporting_claim_ids": [
+        "claim_eeHvbC8bpXQ_22",
+        "claim_eeHvbC8bpXQ_1"
+      ],
+      "evidence_summary": "Phantom Dive places 6 counters on the opponent’s Bench in any way you like; counters are not attack damage, so a benched Tera Pokémon ex is not protected from them. Hedrick’s own critique of his round-4 line is that the counters he placed did not set up the next turn.",
+      "confidence": "medium",
+      "open_questions": [
+        "How much banked damage is worth one immediate Prize? No source quantifies it."
+      ],
+      "layer": "foundation",
+      "canonical_in": "chamber/seed.json (already canonical)",
+      "created_at": "2026-09-20T00:00:00+00:00"
+    },
+    {
+      "id": "two_prize_bench_liability",
+      "name": "Two-Prize bench liability",
+      "definition": "Every benched Pokémon ex is a gust target worth 2 Prizes; count what the opponent needs before benching one, and keep the Bench flexible rather than full.",
+      "primary_skill": "board_bench_discipline",
+      "contexts": [
+        "any_phase"
+      ],
+      "supporting_fact_ids": [
+        "rule_ex_two_prizes",
+        "card_bosssorders",
+        "card_meowthex",
+        "card_fezandipitiex",
+        "rule_bench_max_5",
+        "rule_one_supporter_per_turn"
+      ],
+      "supporting_claim_ids": [
+        "claim_eeHvbC8bpXQ_23",
+        "claim_eeHvbC8bpXQ_18"
+      ],
+      "evidence_summary": "Boss’s Orders switches in any Benched Pokémon and a Pokémon ex gives up exactly 2 Prizes. Hedrick keeps Fezandipiti ex in the Active Spot while building Energy once the opponent has spent most of their gust effects, and counts their remaining Boss’s Orders.",
+      "confidence": "medium",
+      "open_questions": [
+        "When is the draw from Fezandipiti ex worth the 2-Prize exposure? Not addressed by any source."
+      ],
+      "layer": "foundation",
+      "canonical_in": "chamber/seed.json (already canonical)",
+      "created_at": "2026-09-20T00:00:00+00:00"
+    },
+    {
+      "id": "resource_preservation",
+      "name": "Resource preservation",
+      "definition": "Spend the cards you can recover or replace; keep the unique and unrecoverable ones, and keep enough Energy and attackers for the turns after this one.",
+      "primary_skill": "resource_management",
+      "contexts": [
+        "any_phase"
+      ],
+      "supporting_fact_ids": [
+        "card_nightstretcher",
+        "card_ultraball",
+        "card_unfairstamp",
+        "card_crushinghammer",
+        "card_munkidori",
+        "rule_one_energy_attach"
+      ],
+      "supporting_claim_ids": [
+        "claim_eeHvbC8bpXQ_21",
+        "claim_eeHvbC8bpXQ_4",
+        "claim_eeHvbC8bpXQ_6"
+      ],
+      "evidence_summary": "Night Stretcher returns a Pokémon or a Basic Energy card and nothing else, so what is recoverable is fixed by the deck list. Hedrick names not recovering a Darkness Energy one turn earlier as the mistake that lost a game, and treats Night Stretcher and Ultra Ball counts as the line between a consistency card and a rationed resource.",
+      "confidence": "high",
+      "open_questions": [
+        "No source gives a rule for when to spend the last Night Stretcher."
+      ],
+      "layer": "foundation",
+      "canonical_in": "chamber/seed.json (already canonical)",
+      "created_at": "2026-09-20T00:00:00+00:00"
+    }
+  ]
+}

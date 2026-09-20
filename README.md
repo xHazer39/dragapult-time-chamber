@@ -107,6 +107,18 @@ python corpus/check.py
 It resolves every id, claim, source, deck and concept reference, applies the Chamber's own evidence rules to the
 corpus evidence, and re-verifies the counts the corpus documents declare. Exit code 1 if anything is wrong.
 
+The corpus has two layers. **Foundations** (`corpus/foundations/`) is a small beginner curriculum: 6 concepts, 12
+positions, described in `corpus/foundations/FOUNDATIONS_v0.1.md`. **Elite** (everything else) is the Worlds-2026
+pro material: claims with timestamps, candidate positions and advanced cases. Only the foundation layer is
+imported into the database so far:
+
+```sh
+python corpus/import_foundations.py            # idempotent; --dry-run to see what it would do
+```
+
+Research labels (BEST, MISTAKE, …) are never imported: in the Chamber only FACT, COACH_GOLD and CONSENSUS
+evidence with a verdict decides an answer.
+
 ## Tests
 
 ```sh
