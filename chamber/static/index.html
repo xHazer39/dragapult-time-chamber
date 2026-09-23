@@ -20,11 +20,19 @@
       <a href="#inbox" data-view="inbox" title="Inbox · G I"><span data-icon="inbox"></span><span class="nav-label">Inbox</span><span class="count" id="count-inbox"></span></a>
     </nav>
     <div class="hud-end">
+      <button class="cmdk capsule" id="cmdk" aria-label="Command palette" aria-haspopup="dialog"><span class="cmdk-label">Commands</span></button>
       <div class="deck-chip capsule" id="deck-chip"></div>
       <button class="icon capsule" id="collapse" title="Compact navigation" aria-label="Compact navigation"></button>
     </div>
   </header>
   <main id="main" class="page" aria-live="polite"></main>
+  <div class="actionbar" id="actionbar" role="note" aria-label="Keyboard shortcuts for this step"></div>
+  <dialog class="palette" id="palette" aria-label="Command palette">
+    <input type="text" id="palette-input" role="combobox" aria-expanded="true" aria-controls="palette-list" aria-autocomplete="list"
+      aria-label="Search commands" placeholder="Type a command or a case…" autocomplete="off" spellcheck="false">
+    <ul id="palette-list" role="listbox" aria-label="Commands"></ul>
+    <div class="palette-foot" aria-hidden="true"><span><kbd>↑</kbd><kbd>↓</kbd> move</span><span><kbd>↵</kbd> run</span><span><kbd>Esc</kbd> close</span></div>
+  </dialog>
   <script src="/app.js"></script>
 </body>
 </html>

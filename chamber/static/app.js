@@ -9,6 +9,7 @@ const PLAN_LABELS = { objective: 'Objective of this turn', prize_map: 'Prize map
   opponent_plan: "Opponent's likely plan", preserve: 'Key resource to preserve' };
 const RECALL = [[1, 'Again'], [2, 'Hard'], [3, 'Good'], [4, 'Easy']];
 const GRADING = ['FACT', 'COACH_GOLD', 'CONSENSUS'];
+const MOD = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘' : 'Ctrl';
 
 const ICONS = {
   today: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
@@ -31,6 +32,7 @@ const ICONS = {
   sidebar: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/>',
   flag: '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><path d="M4 22v-7"/>',
   info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>',
+  search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
 };
 const SOURCE_ICON = { ptcgl_log: 'file', pro_match: 'play', coach_note: 'message', manual: 'plus',
   tcgmasters_link: 'link', prizemap_link: 'link', other: 'file' };
@@ -62,7 +64,10 @@ async function api(method, path, body) {
   if (!r.ok) throw new Error(data.error || `HTTP ${r.status}`);
   return data;
 }
-const show = (...nodes) => $main.replaceChildren(...nodes.flat(Infinity).filter((n) => n != null && n !== false));
+const show = (...nodes) => {
+  $main.replaceChildren(...nodes.flat(Infinity).filter((n) => n != null && n !== false));
+  $main.classList.remove('enter'); void $main.offsetWidth; $main.classList.add('enter');   // what changed: the screen
+};
 const errorBox = () => h('p', { class: 'error', role: 'alert' });
 const fail = (box, e) => { box.textContent = e.message; };
 const badge = (text, tone = '') => h('span', { class: `badge ${tone}` }, text);
@@ -116,7 +121,7 @@ function statusView(text, label) {
   const t = text || '';
   const [tone, extra] = t.startsWith('repeat error') ? ['danger', 'ring'] : t.startsWith('active leak') ? ['danger', '']
     : t.startsWith('possible leak') ? ['warning', ''] : t.startsWith('known') ? ['warning', '']
-      : t.startsWith('transfers in drills') ? ['warning', 'hollow'] : t.startsWith('no current') ? ['success', ''] : ['neutral', 'hollow'];
+      : t.startsWith('transfers in drills') ? ['warning', 'hollow'] : t.startsWith('no current') ? ['success', ''] : ['neutral', 'dashed'];
   return h('span', { class: `status ${tone} ${extra}` }, label || t);
 }
 const today = () => new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -134,10 +139,10 @@ async function viewToday() {
   // before the decision is priming. Mode and reason appear after the reveal, leaks in Progress.
   const logReal = () => { location.hash = '#progress/log'; };
   const cta = h('div', { class: 'cta' },
-    t.play.play ? [btn('Log real match', { cls: 'primary lg glow', ic: 'flag', key: 'L', on: logReal }),
+    t.play.play ? [btn('Log real match', { cls: 'primary lg glow', ic: 'flag', on: logReal }),
       t.reps ? btn(`Train anyway · ${t.reps} reps`, { id: 'start', cls: 'ghost', on: startSession }) : null]
-      : [btn('Start session', { id: 'start', cls: `primary lg${t.reps ? ' glow' : ''}`, ic: 'play', key: '↵', on: startSession, disabled: !t.reps }),
-        btn('Log real match', { cls: 'ghost', ic: 'flag', key: 'L', on: logReal })]);
+      : [btn('Start session', { id: 'start', cls: `primary lg${t.reps ? ' glow' : ''}`, ic: 'play', on: startSession, disabled: !t.reps }),
+        btn('Log real match', { cls: 'ghost', ic: 'flag', on: logReal })]);
   const hero = h('section', { class: `well today-well${t.reps || t.play.play ? '' : ' is-dim'}`, id: t.play.play ? 'real-evidence' : null },
     h('div', { class: 'copy' },
       h('div', { class: 'overline' }, 'Highest-value training now'),
@@ -185,12 +190,11 @@ function focusBar() {
     // The training mode arrives with the reveal only: knowing a rep targets a leak biases the decision.
     S.phase === 'reveal' && S.reveal?.item ? badge(S.reveal.item.mode, S.reveal.item.mode === 'exploit' ? 'accent' : '') : null,
     h('span', { class: 'spacer' }),
-    S.phase === 'answer' ? h('span', { class: 'row caption' }, icon('clock', 14), h('span', { id: 'timer', class: 'tabular' }, '0:00'), 'since lock') : null,
-    h('span', { class: 'row caption' }, kbd('Esc'), 'Exit focus'));
+    S.phase === 'answer' ? h('span', { class: 'row caption' }, icon('clock', 14), h('span', { id: 'timer', class: 'tabular' }, '0:00'), 'since lock') : null);
 }
 
 function caseMeta(c) {
-  return h('div', { class: 'row' }, c.synthetic ? badge('SYNTHETIC DEMO', 'warning') : badge('Real source'), badge(c.decision_family),
+  return h('div', { class: 'row case-meta' }, c.synthetic ? badge('SYNTHETIC DEMO', 'warning') : badge('Real source'), badge(c.decision_family),
     badge(`Transfer ${c.transfer_level}`), badge(`Choices ${c.completeness}`), h('span', { class: 'caption' }, c.deck_label));
 }
 
@@ -209,19 +213,25 @@ async function viewCase(parts = []) {
   }
   if (!S.case && S.session && S.phase !== 'done') await loadNext();
   setFocus(S.case && S.phase !== 'done');
-  if (S.phase === 'done') return show(sessionComplete());
+  // Deep focus while deciding: chrome recedes around plan and decision, returns for the review.
+  document.body.classList.toggle('deep-focus', !!S.case && (S.phase === 'plan' || S.phase === 'answer'));
+  window.scrollTo(0, 0);
+  if (S.phase === 'done') { show(sessionComplete()); return land('back-today'); }
   if (!S.case) return show(h('section', { class: 'card', style: 'margin-top:48px' }, empty('case', 'No active session',
     'Cases open from a session so the scheduler can mix exploit, coverage and probe reps. Start one from Today, or practise a promoted case from the Inbox.',
     h('a', { class: 'btn primary', href: '#today' }, 'Go to Today', kbd('G T')))));
   const c = S.case;
-  window.scrollTo(0, 0);   // every phase change starts at its focal object: the prompt, then the verdict
-  if (S.phase === 'reveal') return show(focusBar(), revealView(S.reveal));
+  if (S.phase === 'reveal') { show(focusBar(), revealView(S.reveal)); return land('story-title'); }
   const side = S.phase === 'plan' ? planForm(c) : answerForm(c);
-  show(focusBar(), h('div', { class: 'case-head' }, caseMeta(c), h('h1', { class: 'prompt', id: 'prompt' }, c.prompt)),
+  show(focusBar(), h('div', { class: 'case-head' }, caseMeta(c), h('h1', { class: 'prompt', id: 'prompt', tabindex: '-1' }, c.prompt)),
     S.retry ? h('div', { class: 'banner dashed' }, icon('clock', 14), `Retry of this case · counts as a seen (L0) attempt · never updates memory · stays out of repeat-error counts`) : null,
     h('div', { class: 'case-grid' }, positionPanel(c), h('div', { class: 'decision' }, side)));
-  if (S.phase === 'answer') startTimer();
+  if (S.phase === 'answer') { startTimer(); return land('prompt'); }
+  // with a keyboard, the plan is typed straight away; on touch, no keyboard pops up uninvited
+  land(matchMedia('(pointer: fine)').matches ? document.querySelector('textarea[id^="plan-"]')?.id : 'prompt');
 }
+// Every phase change lands focus on its focal object, so screen readers and the keyboard start there.
+function land(id) { const el = id && document.getElementById(id); if (el) el.focus({ preventScroll: true }); }
 
 function planForm(c) {
   const fields = c.requires.length ? c.requires : ['objective'];
@@ -237,7 +247,7 @@ function planForm(c) {
     h('div', { class: 'stack', style: 'gap:2px' }, h('h2', {}, 'Commit your plan first'),
       h('span', { class: 'small secondary' }, c.requires.length ? 'Required for this case. Choices appear only after you lock it.' : 'Optional for this case. Choices appear after you lock it.')),
     fields.map((f) => field(`${PLAN_LABELS[f]}${c.requires.includes(f) ? '  ·  required' : ''}`, h('textarea', { id: `plan-${f}` }))),
-    h('div', { class: 'row', style: 'gap:12px' }, btn('Lock plan', { id: 'lock', cls: 'primary', ic: 'lock', key: '⌘↵', on: lock }),
+    h('div', { class: 'row cta-row', style: 'gap:12px' }, btn('Lock plan', { id: 'lock', cls: 'primary', ic: 'lock', on: lock }),
       h('span', { class: 'caption' }, 'The plan cannot be edited after locking.')),
     box);
 }
@@ -264,21 +274,22 @@ function answerForm(c) {
     h('div', { class: 'form-grid answer-extra' },
       field(c.choices.length ? 'Other line · optional' : 'Your line', h('textarea', { id: 'other', placeholder: 'Describe a line that is not listed' })),
       field('Reasoning · optional', h('textarea', { id: 'reasoning', rows: 2 }))),
-    h('div', { class: 'row' }, btn('Submit decision', { id: 'submit', cls: 'primary', key: '⌘↵', on: submit }),
-      btn('Hint · caps memory at Hard', { id: 'hint-btn', cls: 'ghost', key: 'H', on: useHint })),
+    h('div', { class: 'row cta-row' }, btn('Submit decision', { id: 'submit', cls: 'primary', on: submit }),
+      btn('Hint · caps memory at Hard', { id: 'hint-btn', cls: 'ghost', on: useHint })),
     hint, box);
 }
 
+// The reveal reads as one story. The anchor answers "what did I choose, and what can the Chamber honestly say?"
+// (01 plan → 02 decision → 03 verdict); then 04 why and 05 evidence; then 06 principle → 07 recall → 08 next.
+const step = (n, title, ...kids) => h('section', { class: 'step' },
+  h('div', { class: 'step-head' }, h('span', { class: 'node', 'aria-hidden': 'true' }, n), h('h2', {}, title)), ...kids);
+
 function verdict(r) {
-  const a = r.attempt, c = r.case;
-  if (r.graded) {
-    const lv = [...new Set(c.evidence.filter((x) => GRADING.includes(x.level) && x.choice === a.choice && x.verdict).map((x) => x.level))].join(' / ');
-    return h('div', { id: 'verdict', class: 'stack', style: 'gap:8px' },
-      h('div', { class: `pill ${a.correct ? 'ok' : 'bad'}` }, icon(a.correct ? 'check' : 'x'), a.correct ? 'Matches the graded evidence' : 'Error · Contradicted by graded evidence'),
-      h('span', { class: 'small secondary' }, `Graded by ${lv}: every grading-level item on your choice agrees.`));
-  }
-  return h('div', { id: 'verdict', class: 'stack', style: 'gap:8px' }, h('div', { class: 'pill none' }, 'Not graded'),
-    h('span', { class: 'small secondary' }, 'No unanimous FACT, COACH_GOLD or CONSENSUS verdict on your choice. Compare with the ledger; you judge it below.'));
+  const a = r.attempt;
+  // Strength tracks evidence: a graded verdict is solid; "Not graded" stays open, never styled as a failure.
+  return h('div', { id: 'verdict' }, r.graded
+    ? h('div', { class: `pill ${a.correct ? 'ok' : 'bad'}` }, icon(a.correct ? 'check' : 'x'), a.correct ? 'Matches the graded evidence' : 'Error · Contradicted by graded evidence')
+    : h('div', { class: 'pill none' }, 'Not graded'));
 }
 
 function revealView(r) {
@@ -288,41 +299,50 @@ function revealView(r) {
     a.retries ? `retry #${a.retries} · does not update memory` : null, a.reasoning ? `“${a.reasoning}”` : null].filter(Boolean).join(' · ');
   const tally = (key) => c.evidence.filter((x) => x.choice === key && x.verdict);
   const best = (key) => { const t = tally(key).filter((x) => GRADING.includes(x.level)); return t.length && t.every((x) => x.verdict === 'good'); };
-  return h('div', { class: 'stack', style: 'gap:20px' },
+  const plan = Object.entries(a.plan || S.plan || {}).filter(([, v]) => v);
+  const lv = [...new Set(c.evidence.filter((x) => GRADING.includes(x.level) && x.choice === a.choice && x.verdict).map((x) => x.level))].join(' / ');
+  const [principle, recall, next] = reviewForm(r);
+  return h('div', { class: 'stack', style: 'gap:28px' },
     h('section', { class: `well outcome${r.graded ? '' : ' is-dim'}`, id: 'reveal' },
-      h('div', { class: 'stack', style: 'gap:6px' }, h('div', { class: 'overline' }, 'Your line'),
-        h('div', { class: 'title' }, chosen ? `${chosen.key}.  ${chosen.text}` : `Other line: ${a.other_text}`),
-        h('span', { class: 'small secondary tabular' }, metaLine),
-        r.item ? h('span', { class: 'caption' }, `Why this rep: ${r.item.mode} · ${r.item.reason}`) : null),
-      h('div', { class: 'stack verdict-col', style: 'gap:12px' }, h('div', { class: 'overline' }, 'Outcome'), verdict(r),
-        r.disputes.length ? h('div', { id: 'disputes', class: 'row small warn' }, icon('alert', 14), `Evidence disagrees on choice ${r.disputes.join(', ')} — kept, not resolved.`) : null)),
-    h('div', { class: 'review-grid' },
-      h('div', { class: 'stack', style: 'gap:24px' },
-        h('section', { class: 'stack' }, h('div', { class: 'row' }, h('h2', {}, 'Reference lines'), h('span', { class: 'caption' }, `Choices listed: ${c.completeness}`)),
-          c.choices.length ? c.choices.map((x) => h('div', { class: `ref-row${best(x.key) ? ' best' : ''}` }, h('span', {}, `${x.key}.  ${x.text}`),
+      h('ol', { class: 'flow' },
+        h('li', { class: 'flow-step' }, h('span', { class: 'node solid', 'aria-hidden': 'true' }, '01'), h('div', { class: 'overline' }, 'Your plan'),
+          plan.length ? h('div', { class: 'plan-lines' }, plan.map(([k, v]) => h('p', {}, h('span', { class: 'muted' }, `${PLAN_LABELS[k]} · `), v)))
+            : h('span', { class: 'small muted' }, '(none declared)')),
+        h('li', { class: 'flow-step' }, h('span', { class: 'node solid', 'aria-hidden': 'true' }, '02'), h('div', { class: 'overline' }, 'Your decision'),
+          h('div', { class: 'title' }, chosen ? `${chosen.key}.  ${chosen.text}` : `Other line: ${a.other_text}`),
+          h('span', { class: 'small secondary tabular' }, metaLine)),
+        h('li', { class: 'flow-step verdict-step' }, h('span', { class: `node ${r.graded ? 'solid now' : 'dashed'}`, 'aria-hidden': 'true' }, '03'),
+          h('h2', { class: 'overline', id: 'story-title', tabindex: '-1' }, r.graded ? 'Verdict · graded' : 'Verdict · unresolved'), verdict(r)))),
+    h('div', { class: 'reveal-grid' },
+      h('div', { class: 'story' },
+        step('04', 'Why',
+          h('p', { class: 'why' }, r.graded ? `Graded by ${lv}: every grading-level item on your choice agrees.`
+            : 'No unanimous FACT, COACH_GOLD or CONSENSUS verdict on your choice, so the Chamber does not call it right or wrong. Compare with the evidence; you judge it in Recall.'),
+          r.disputes.length ? h('div', { id: 'disputes', class: 'row small warn' }, icon('alert', 14), `Evidence disagrees on choice ${r.disputes.join(', ')} — kept, not resolved.`) : null,
+          c.unknown_fields.length ? h('div', { class: 'row', style: 'gap:6px' }, h('span', { class: 'caption' }, 'Uncertain:'), c.unknown_fields.map((u) => h('span', { class: 'ev ev-UNKNOWN plain' }, u))) : null,
+          h('span', { class: 'caption' }, `Choice list ${c.completeness} · reconstruction ${c.reconstruction}${c.synthetic ? ' · synthetic demo position' : ''}${c.full_record ? '' : ' · no hindsight record for this case'}`)),
+        step('05', 'Evidence on each line',
+          c.choices.length ? h('div', { class: 'stack', style: 'gap:8px' }, c.choices.map((x) => h('div', { class: `ref-row${best(x.key) ? ' best' : ''}` }, h('span', {}, `${x.key}.  ${x.text}`),
             x.key === a.choice ? badge('your line', 'accent') : null,
             h('span', { class: 'tally' }, tally(x.key).length ? tally(x.key).map((e) => h('span', { class: 'row', style: 'gap:4px' }, ev(e.level),
               h('span', { class: `caption ${e.verdict === 'good' ? 'ok' : 'bad'}` }, e.verdict === 'good' ? 'supports' : 'against')))
-              : h('span', { class: 'caption' }, 'no verdict in evidence'))))
-            : h('span', { class: 'small muted' }, 'No listed choices: this case asks for your own line.')),
+              : h('span', { class: 'caption' }, 'no verdict in evidence')))))
+            : h('span', { class: 'small muted' }, 'No listed choices: this case asks for your own line.'),
+          h('span', { class: 'caption' }, `Choices listed: ${c.completeness} · a pro line is not proof of best`))),
+      h('section', { class: 'card review-panel take' }, principle, recall, next, coachBox(r)),
+      h('div', { class: 'ledger-area stack', style: 'gap:18px' },
         h('section', { class: 'stack' }, h('div', { class: 'row' }, h('h2', {}, 'Evidence ledger'), h('span', { class: 'caption' }, `Append-only · ${c.evidence.length} items`)),
           h('div', { class: 'scroll' }, h('table', { id: 'ledger', class: 'ledger' },
             h('tr', {}, ['Level', 'On', 'Verdict', 'Claim', 'Source'].map((x) => h('th', {}, x))),
             c.evidence.map((x) => h('tr', {}, h('td', {}, ev(x.level)), h('td', {}, x.choice || '—'),
               h('td', { class: x.verdict === 'good' ? 'ok' : x.verdict === 'bad' ? 'bad' : '' }, x.verdict === 'good' ? [icon('check', 14), ' supports'] : x.verdict === 'bad' ? [icon('x', 14), ' against'] : '—'),
               h('td', {}, x.claim), h('td', {}, [x.source_ref, x.reviewer].filter(Boolean).join(' · ') || '—')))))),
-        h('section', { class: 'card legend' },
+        h('details', { class: 'card legend' }, h('summary', {}, 'How evidence grades'),
           h('div', {}, h('span', { class: 'label' }, 'Can grade'), GRADING.map(ev), h('span', { class: 'caption' }, 'only when unanimous on your choice')),
           h('div', {}, h('span', { class: 'label' }, 'Never grades alone'), ['PRO_LINE', 'SIMULATION', 'HEURISTIC'].map(ev), h('span', { class: 'caption' }, 'a pro line is not proof of best')),
           h('div', {}, h('span', { class: 'label' }, 'Not established'), ev('UNKNOWN'), h('span', { class: 'caption' }, 'shown, never filled in'))),
-        h('section', { class: 'stack' }, h('h2', {}, 'What is uncertain'),
-          c.unknown_fields.length ? h('div', { class: 'row', style: 'gap:6px' }, c.unknown_fields.map((u) => h('span', { class: 'ev ev-UNKNOWN plain' }, u))) : null,
-          h('span', { class: 'caption' }, `Choice list ${c.completeness} · reconstruction ${c.reconstruction}${c.synthetic ? ' · synthetic demo position' : ''}${c.full_record ? '' : ' · no hindsight record for this case'}`)),
         c.full_record ? h('section', { class: 'stack' }, h('h2', {}, 'Full record · hindsight, shown only after you answer'), h('pre', { class: 'excerpt' }, c.full_record)) : null,
-        evidenceForm(c, r.evidence_levels)),
-      h('section', { class: 'card review-panel', style: 'padding:22px;gap:20px' },
-        h('div', { class: 'row overline', style: 'color:var(--accent-text)' }, icon('today', 14), 'Now revealed · what this rep trained'),
-        reviewForm(r), coachBox(r))));
+        evidenceForm(c, r.evidence_levels))));
 }
 
 function coachBox(r) {
@@ -352,38 +372,44 @@ function reviewForm(r) {
   const done = r.attempt.recall[target.id] != null;
   const retry = () => { Object.assign(S, { phase: 'plan', attemptId: null, plan: null, reveal: null, retry: S.retry + 1 }); viewCase(); };
   const after = h('div', { class: 'stack', id: 'after', hidden: !done },
-    h('div', { class: 'row' },
-      S.session ? btn('Save & next rep', { id: 'next', cls: 'primary', ic: 'arrow', key: '↵', on: async () => { await loadNext(); viewCase(); } })
+    h('div', { class: 'row cta-row' },
+      S.session ? btn('Save & next rep', { id: 'next', cls: 'primary', ic: 'arrow', on: async () => { await loadNext(); viewCase(); } })
         : h('a', { href: '#today', id: 'next', class: 'btn primary' }, 'Back to Today'),
-      btn('Retry', { id: 'retry', key: 'R', on: retry })),
+      btn('Retry', { id: 'retry', on: retry })),
     h('span', { class: 'caption' }, 'Retry counts as a seen (L0) attempt and never updates memory.'));
+  const pending = h('span', { class: 'caption', hidden: done }, 'Save the review to continue.');
+  const saved = h('span', { class: 'small secondary', hidden: !done }, 'Review saved.');
   const save = async () => {
     const ratings = { [target.id]: Number(picked(`recall-${target.id}`)) };
     const errorConcepts = [...document.querySelectorAll('input[name="error-concept"]:checked')].map((x) => x.value);
     try { await api('POST', `/api/attempts/${r.attempt.id}/review`, { ratings, outcome: picked('self-outcome') || null,
       error_tags: tags(val('error-tags')), error_concepts: errorConcepts });
       S.log.push({ graded: r.graded, correct: r.attempt.correct, self: picked('self-outcome') || null });
-      form.hidden = true; after.hidden = false; S.reviewed = true; } catch (e) { fail(box, e); } };
-  const form = h('div', { class: 'stack', style: 'gap:20px', hidden: done },
-    h('div', { class: 'concept', id: 'target-concept' },
-      h('div', { class: 'row' }, h('h2', {}, target.name), badge(target.skill)),
-      h('span', { class: 'small secondary' }, target.definition),
-      h('span', { class: 'caption' }, 'Did you recall this before the reveal?'),
-      seg(`recall-${target.id}`, RECALL, null, ['1', '2', '3', '4'])),
-    others.length ? h('div', { class: 'stack', id: 'linked-concepts', style: 'gap:4px' },
-      h('span', { class: 'caption' }, 'Also linked to this case · not scheduled by this rep'),
-      h('div', { class: 'row', style: 'gap:6px' }, others.map((k) => badge(k.name)))) : null,
-    h('span', { class: 'caption' }, 'Recall schedules memory (FSRS) for this one concept. It is not a grade and not a skill score.'),
+      form.hidden = true; pending.hidden = true; saved.hidden = false; after.hidden = false; S.reviewed = true; land('next'); } catch (e) { fail(box, e); } };
+  const form = h('div', { class: 'stack', style: 'gap:18px', hidden: done },
+    h('div', { class: 'stack', style: 'gap:8px' }, h('span', { class: 'small' }, `Did you recall “${target.name}” before the reveal?`),
+      seg(`recall-${target.id}`, RECALL, null, ['1', '2', '3', '4']),
+      h('span', { class: 'caption' }, 'Recall schedules memory (FSRS) for this one concept. It is not a grade and not a skill score.')),
     r.graded ? null : h('div', { class: 'stack', style: 'gap:8px' }, h('span', { class: 'small' }, 'Was your decision an error you want to stop repeating?'),
       seg('self-outcome', [['ok', 'Fine'], ['error', 'Error'], ['', 'Not sure']], '', ['F', 'E', 'N']),
       h('span', { class: 'caption warn' }, 'Self-reported · weak evidence · never overrides graded evidence')),
     c.concepts.length > 1 ? h('div', { class: 'stack', style: 'gap:6px' }, h('span', { class: 'small' }, 'If this was an error, which concept(s) caused it?'),
       h('span', { class: 'caption' }, 'Leave all unchecked if unsure. The Chamber will not blame every linked concept.'),
-      h('div', { id: 'error-concepts', class: 'stack', style: 'gap:6px' }, c.concepts.map((k) => h('label', { class: 'check' },
+      h('div', { id: 'error-concepts', class: 'stack', style: 'gap:2px' }, c.concepts.map((k) => h('label', { class: 'check' },
         h('input', { type: 'checkbox', name: 'error-concept', value: k.id }), k.name)))) : null,
     field('Root-cause tags · comma separated, optional', h('input', { type: 'text', id: 'error-tags', placeholder: c.root_cause_tags.concat(c.symptom_tags).join(', ') })),
-    h('div', { class: 'row' }, btn('Save review', { id: 'save-review', cls: 'primary', on: save })), box);
-  return h('div', { class: 'stack', style: 'gap:20px' }, form, after);
+    h('div', { class: 'row cta-row' }, btn('Save review', { id: 'save-review', cls: 'primary', on: save })), box);
+  return [
+    step('06', 'Principle · what this rep trained',
+      h('div', { class: 'concept', id: 'target-concept' }, h('div', { class: 'row' }, h('h3', { class: 'concept-name' }, target.name), badge(target.skill)),
+        h('p', { class: 'small secondary', style: 'margin:0' }, target.definition)),
+      others.length ? h('div', { class: 'stack', id: 'linked-concepts', style: 'gap:4px' },
+        h('span', { class: 'caption' }, 'Also linked to this case · not scheduled by this rep'),
+        h('div', { class: 'row', style: 'gap:6px' }, others.map((k) => badge(k.name)))) : null,
+      r.item ? h('span', { class: 'caption' }, `Why this rep: ${r.item.mode} · ${r.item.reason}`) : null),
+    step('07', 'Recall', form, saved),
+    step('08', 'Next', pending, after),
+  ];
 }
 
 function evidenceForm(c, levels) {
@@ -413,12 +439,12 @@ function readEvidence(p) {
 function sessionComplete() {
   const graded = S.log.filter((x) => x.graded), ok = graded.filter((x) => x.correct).length;
   const stat = (n, l, cls) => h('div', { class: 'stack', style: 'gap:2px;align-items:center' }, h('span', { class: `metric-sm ${cls}` }, String(n)), h('span', { class: 'caption' }, l));
-  return h('section', { class: 'well complete' }, h('div', { class: 'check-ring' }, icon('check')), h('h2', { class: 'title' }, 'Session complete'),
+  return h('section', { class: 'well complete' }, h('div', { class: 'check-ring' }, icon('check')), h('h2', { class: 'title', id: 'complete-title', tabindex: '-1' }, 'Session complete'),
     h('span', { class: 'small secondary tabular' }, `${S.reps} reps planned · ${S.log.length} reviewed in this browser session`),
     h('div', { class: 'row', style: 'gap:28px;justify-content:center' }, stat(ok, 'ok · graded', 'ok'), stat(graded.length - ok, 'errors · graded', 'bad'),
       stat(S.log.length - graded.length, 'ungraded', 'secondary')),
-    h('div', { class: 'row', style: 'justify-content:center' }, h('a', { class: 'btn primary', href: '#today', id: 'back-today' }, 'Back to Today', kbd('↵')),
-      h('a', { class: 'btn', href: '#progress/log' }, icon('flag'), 'Log real match', kbd('L'))));
+    h('div', { class: 'row', style: 'justify-content:center' }, h('a', { class: 'btn primary', href: '#today', id: 'back-today' }, 'Back to Today'),
+      h('a', { class: 'btn', href: '#progress/log' }, icon('flag'), 'Log real match')));
 }
 
 let timer = null;
@@ -456,6 +482,56 @@ function kpi(label, a, b, unit, needUnit, min, selfLine, provVerified) {
     selfLine ? h('div', { class: 'selfline tabular' }, h('span', { class: 'dot s' }), selfLine) : null);
 }
 
+// "What should I do next?" Only restates the status labels stats.py already computed, in their own
+// severity order. Weak or missing evidence dims the well and says so; it never invents a conclusion.
+const NEXT = [
+  ['repeat error', 'Repeat error detected', true, (s) => `${s.repeat.real.errors}/${s.repeat.real.later} real-game opportunities after the first verified error repeated it.`, 'real'],
+  ['active leak', 'Train this concept', true, (s) => `${s.recent.errors}/${s.recent.n} recent verified results are errors.`, 'unseen'],
+  ['possible leak', 'Possible leak · self-reported', false, (s) => `${s.recent.self_n ? `${s.recent.self_errors}/${s.recent.self_n} recent self-reported results are errors` : `${s.tiers.real.self_error} self-reported real-game error(s)`}. Self-reports are weak evidence: a verified result would settle it.`, 'unseen'],
+  ['known, not transferring', 'Needs unseen transfer', true, (s) => `Memory is strong, but only ${s.tiers.unseen.ok}/${s.tiers.unseen.ok + s.tiers.unseen.error} verified unseen positions were handled.`, 'unseen'],
+  ['transfers in drills', 'Go play real matches', true, (s) => `Drills transfer to unseen positions, but real games have ${s.tiers.real.ok + s.tiers.real.error} verified results.`, 'real'],
+  ['known, not yet shown', 'Needs unseen positions', false, () => 'Memory is strong, but too few unseen positions have been answered to say whether it transfers.', 'unseen'],
+];
+function pathNodes(tiers, th, target) {
+  // seen → unseen → real. Solid: enough verified results. Hollow: observed, below the minimum. Dashed: nothing yet.
+  const mins = { seen: 1, unseen: th.unseen, real: th.real };
+  return h('ol', { class: 'path', 'aria-label': 'Evidence path' }, ['seen', 'unseen', 'real'].map((t) => {
+    const v = tiers[t].ok + tiers[t].error, o = v + tiers[t].self_ok + tiers[t].self_error;
+    const shape = v >= mins[t] ? 'solid' : o ? 'hollow' : 'dashed';
+    return h('li', { class: t === target ? 'now' : '' }, h('span', { class: `node ${shape}`, 'aria-hidden': 'true' }),
+      h('span', { class: 'small' }, t[0].toUpperCase() + t.slice(1)),
+      h('span', { class: 'caption tabular' }, t === 'seen' ? `${v} verified` : `${v} of ${mins[t]} verified`));
+  }));
+}
+function nextStep(p) {
+  const C = p.concepts, th = p.thresholds;
+  for (const [prefix, title, strong, why, target] of NEXT) {
+    const hit = C.filter((s) => s.status.startsWith(prefix))
+      .sort((x, y) => (y.recent.errors + y.recent.self_errors) - (x.recent.errors + x.recent.self_errors));
+    if (!hit.length) continue;
+    const s = hit[0], play = prefix === 'transfers in drills';
+    return h('section', { class: `well next${strong ? '' : ' is-dim'}`, id: 'next-step' },
+      h('div', { class: 'stack', style: 'gap:10px' }, h('div', { class: 'overline' }, 'What should I do next?'),
+        h('h2', { class: 'next-title' }, title), h('div', { class: 'row' }, statusView(s.status, s.name), h('span', { class: 'caption' }, s.status)),
+        h('p', { class: 'why' }, why(s)),
+        hit.length > 1 ? h('span', { class: 'caption' }, `Same state: ${hit.slice(1).map((x) => x.name).join(', ')}`) : null,
+        h('div', { class: 'row' }, play ? h('a', { class: 'btn primary', href: '#progress/log' }, icon('flag'), 'Log real match')
+          : h('a', { class: 'btn primary', href: '#today' }, icon('play'), 'Start a session'),
+          h('span', { class: 'caption' }, play ? 'Log each real opportunity below.' : 'The scheduler picks the reps; Progress does not choose them.'))),
+      pathNodes(s.tiers, th, target));
+  }
+  const clean = C.length && C.every((s) => s.status.startsWith('no current'));
+  const thin = C.filter((s) => s.status.startsWith('insufficient')).length;
+  return h('section', { class: 'well next is-dim', id: 'next-step' },
+    h('div', { class: 'stack', style: 'gap:10px' }, h('div', { class: 'overline' }, 'What should I do next?'),
+      h('h2', { class: 'next-title' }, clean ? 'No strong conclusion' : 'Insufficient evidence'),
+      h('p', { class: 'why' }, clean ? 'No concept shows a current verified leak. That is not proof of mastery: keep logging real games.'
+        : `${thin} of ${C.length} concepts are below the minimum sample (${th.unseen} verified unseen, ${th.real} verified real). Nothing can be concluded yet.`),
+      h('div', { class: 'row' }, clean ? h('a', { class: 'btn primary', href: '#progress/log' }, icon('flag'), 'Log real match')
+        : h('a', { class: 'btn primary', href: '#today' }, icon('play'), 'Start a session'))),
+    pathNodes(p.totals, th, clean ? 'real' : 'unseen'));
+}
+
 async function viewProgress(parts = []) {
   const [p, m] = [await api('GET', '/api/progress'), await meta()];
   const th = p.thresholds, box = errorBox(), T = p.totals, C = p.concepts;
@@ -470,6 +546,7 @@ async function viewProgress(parts = []) {
   const memText = (s) => !s.memory.reviewed ? 'never reviewed · due' : `${s.memory.due ? 'due' : 'not due'} · recall p ${s.memory.retrievability}`;
   show(
     head(`${T.seen.ok + T.seen.error + T.unseen.ok + T.unseen.error + T.real.ok + T.real.error} verified results · ${self('seen') + self('unseen') + self('real')} self-reported`, 'Progress'),
+    nextStep(p),
     h('div', { class: 'legend-line' }, h('span', {}, h('span', { class: 'dot v' }), 'Verified: graded by FACT / COACH_GOLD / CONSENSUS'),
       h('span', {}, h('span', { class: 'dot s' }), 'Self-reported: weak evidence, never certifies transfer'),
       h('span', {}, h('span', { class: 'dot i' }), 'Insufficient: below minimum sample'),
@@ -546,7 +623,7 @@ async function viewInbox(parts) {
     field('Deck version', select('src-deck', [['', '— none —'], ...m.decks.map((d) => [d.hash, `${d.deck_id} v${d.version}`])], '')),
     field('External link · optional, never fetched', h('input', { type: 'text', id: 'src-url' })),
     field('Content · battle log, notes…', h('textarea', { id: 'src-content', rows: 8 })),
-    h('div', { class: 'row' }, btn('Save source', { id: 'save-source', cls: 'primary', ic: 'plus', key: '⌘↵', on: async () => {
+    h('div', { class: 'row' }, btn('Save source', { id: 'save-source', cls: 'primary', ic: 'plus', on: async () => {
       try { const r = await api('POST', '/api/sources', { source_type: val('src-type'), matchup: val('src-matchup'), opponent_name: val('src-opp'),
         deck_hash: val('src-deck') || null, url: val('src-url'), content: document.getElementById('src-content').value });
         location.hash = `#inbox/source/${r.source_id}`; } catch (e) { fail(box, e); } } })), box); };
@@ -568,7 +645,7 @@ async function viewInbox(parts) {
         has(!!(d.observed_state || '').trim(), 'Observed state · pre-decision information only'), has(!!(d.prompt || '').trim(), 'Prompt'),
         has((d.concepts || []).length > 0, 'At least one concept linked'), has((d.evidence || []).length > 0, 'At least one evidence item (UNKNOWN allowed)'),
         has(!!(d.criticality_source || '').trim(), 'Criticality source')),
-      h('div', { class: 'row' }, h('a', { class: 'btn primary', href: `#inbox/candidate/${c.id}` }, c.status === 'draft' ? 'Open editor' : 'View', kbd('E'))));
+      h('div', { class: 'row' }, h('a', { class: 'btn primary', id: 'open-editor', href: `#inbox/candidate/${c.id}` }, c.status === 'draft' ? 'Open editor' : 'View')));
   };
   const lrow = (ic, title, metaText, trail, on) => h('button', { class: 'lrow', on: { click: on } }, icon(ic), h('span', { class: 't' }, title), h('span', { class: 'm' }, metaText), h('span', { class: 'tr' }, trail), icon('chevron', 14));
   const list = h('div', { class: 'list' },
@@ -582,7 +659,7 @@ async function viewInbox(parts) {
         () => { location.hash = `#inbox/source/${s.id}`; }); })),
     promoted.length ? [h('div', { class: 'group overline' }, `Promoted · ${promoted.length}`),
       promoted.map((c) => lrow('check', c.prompt || c.case_id, `#${c.id} → ${c.case_id}`, 'practise', () => { location.hash = `#case/${c.case_id}`; }))] : null);
-  const stage = (n, label, note, active) => h('div', { class: `stage${active ? ' active' : ''}` }, h('span', { class: 'metric-sm' }, String(n)),
+  const stage = (n, label, note, active) => h('div', { class: `stage${active ? ' active' : ''}${n ? '' : ' none'}` }, h('span', { class: 'metric-sm' }, String(n)),
     h('div', { class: 'stack', style: 'gap:0' }, h('span', { class: 'small' }, label), h('span', { class: 'caption' }, note)));
   const nothing = !inbox.sources.length && !inbox.candidates.length;
   show(head('Nothing here is judged automatically', 'Inbox'),
@@ -695,7 +772,7 @@ async function viewCandidate(id, m) {
           field('Root-cause tags · comma separated', h('input', { type: 'text', id: 'c-causes', value: (d.root_cause_tags || []).join(', ') }))),
         draft ? h('section', { class: 'card', style: 'gap:10px' }, h('div', { class: 'row' },
           btn('Save draft', { id: 'save-cand', on: async () => { try { await save(); box.textContent = 'Saved.'; } catch (e) { fail(box, e); } } }),
-          btn('Validate and promote', { id: 'promote', cls: 'primary', ic: 'check', key: '⌘↵', on: promote })),
+          btn('Validate and promote', { id: 'promote', cls: 'primary', ic: 'check', on: promote })),
           h('span', { class: 'caption' }, 'Promoted drafts are frozen; later evidence is appended to the case.'), box) : box)));
 }
 
@@ -719,6 +796,8 @@ function store(k, v) { try { if (v === undefined) return localStorage.getItem(k)
 function shell() {
   document.getElementById('mark').append(icon('clock', 16));
   document.getElementById('collapse').append(icon('sidebar'));
+  const cmd = document.getElementById('cmdk');
+  cmd.prepend(icon('search', 15)); cmd.append(kbd(`${MOD} K`)); cmd.addEventListener('click', openPalette);
   document.querySelectorAll('[data-icon]').forEach((el) => el.replaceWith(icon(el.dataset.icon)));
   document.getElementById('collapse').addEventListener('click', () => { document.body.classList.toggle('rail'); store('rail', document.body.classList.contains('rail') ? '1' : '0'); });
   if (store('rail') === '1') document.body.classList.add('rail');
@@ -727,19 +806,120 @@ function shell() {
       h('span', { class: 'mono' }, `${d.hash.slice(0, 8)} · ${d.format || 'format unset'}`)); }).catch(() => {});
 }
 
+// ------------------------------------------------------------------ keyboard: one truth for keys, action bar and palette
+// An action is available only when its control is on screen and enabled; onKey, the action bar and the palette all ask live().
+const live = (id) => { const el = document.getElementById(id); return el && !el.disabled && el.offsetParent !== null ? el : null; };
+const isTyping = (t) => !!(t && t.matches && t.matches('input[type=text], textarea, select, [contenteditable]'));
+const currentView = () => (location.hash.slice(1) || 'today').split('/')[0];
+const PRIMARY = [['lock', 'Lock plan'], ['submit', 'Submit decision'], ['promote', 'Validate and promote'], ['save-source', 'Save source'], ['make-candidate', 'Create candidate']];
+const escTarget = () => (document.body.classList.contains('focus') ? ['#today', 'Exit focus'] : location.hash.startsWith('#inbox/') ? ['#inbox', 'Back to Inbox'] : null);
+const nextLabel = () => (live('next')?.tagName === 'A' ? 'Back to Today' : 'Next rep');
+
+function shortcuts() {
+  const view = currentView(), typing = isTyping(document.activeElement), out = [];
+  const add = (keys, label, ok = true) => { if (ok) out.push([keys, label]); };
+  const primary = PRIMARY.find(([id]) => live(id));
+  if (primary) add([MOD, '↵'], primary[1]);
+  if (!typing) {
+    if (view === 'today') { add(['↵'], 'Start session', live('start')); add(['L'], 'Log real match'); }
+    if (view === 'case' && S.phase === 'answer') {
+      const keys = [...document.querySelectorAll('input[name="choice"]')].map((x) => x.value);
+      add(keys.length > 2 ? [keys[0], '–', keys[keys.length - 1]] : keys, 'Choose', keys.length);
+      add(['H'], 'Hint', live('hint-btn'));
+    }
+    if (view === 'case' && S.phase === 'reveal') {
+      add(['1', '–', '4'], 'Rate recall', !!document.querySelector('input[name^="recall-"]')?.offsetParent);
+      add(['F', 'E', 'N'], 'Fine · Error · Not sure', !!document.querySelector('input[name="self-outcome"]')?.offsetParent);
+      add(['↵'], nextLabel(), live('next')); add(['R'], 'Retry', live('retry'));
+    }
+    if (view === 'case' && S.phase === 'done') { add(['↵'], 'Back to Today', live('back-today')); add(['L'], 'Log real match'); }
+    if (view === 'inbox') add(['E'], 'Open editor', live('open-editor'));
+  }
+  if (typing) add(['Esc'], 'Leave field'); else if (escTarget()) add(['Esc'], escTarget()[1]);
+  add([MOD, 'K'], 'Commands');
+  return out;
+}
+const $bar = document.getElementById('actionbar');
+let barKey = '', barQueued = false;
+function refreshBar() {
+  if (barQueued) return; barQueued = true;
+  requestAnimationFrame(() => { barQueued = false;
+    const items = shortcuts(), key = JSON.stringify(items);
+    if (key === barKey) return; barKey = key;   // no DOM churn when nothing changed (the timer ticks every second)
+    $bar.replaceChildren(...items.map(([keys, label]) => h('span', { class: 'act' }, keys.map((k) => (k === '–' ? h('i', {}, '–') : kbd(k))), h('span', {}, label))));
+  });
+}
+
+// ------------------------------------------------------------------ command palette (Ctrl/⌘ K)
+const $pal = document.getElementById('palette'), $pin = document.getElementById('palette-input'), $plist = document.getElementById('palette-list');
+let pal = { items: [], i: 0, back: null, cases: [] };
+function commands() {
+  const out = [], go = (hash) => () => { location.hash = hash; };
+  for (const [v, t, k] of [['today', 'Today', 'G T'], ['case', 'Case', 'G C'], ['progress', 'Progress', 'G P'], ['inbox', 'Inbox', 'G I']])
+    out.push({ group: 'Go to', label: t, hint: k, run: go(`#${v}`) });
+  const via = (id, label, group = 'Actions') => { const el = live(id); if (el) out.push({ group, label, run: () => el.click() }); };
+  via('start', 'Start session'); via('lock', 'Lock plan'); via('submit', 'Submit decision'); via('hint-btn', 'Use hint · caps memory at Hard');
+  via('save-review', 'Save review'); via('next', nextLabel()); via('retry', 'Retry this case'); via('back-today', 'Back to Today');
+  via('save-source', 'Save source'); via('make-candidate', 'Create candidate'); via('promote', 'Validate and promote'); via('open-editor', 'Open candidate editor');
+  out.push({ group: 'Actions', label: 'Log real match', run: go('#progress/log') });
+  if (escTarget()) out.push({ group: 'View', label: escTarget()[1], hint: 'Esc', run: go(escTarget()[0]) });
+  if (live('collapse')) out.push({ group: 'View', label: document.body.classList.contains('rail') ? 'Show navigation labels' : 'Compact navigation', run: () => live('collapse').click() });
+  for (const c of pal.cases) out.push({ group: 'Practise', label: c.prompt || c.case_id, run: go(`#case/${c.case_id}`) });
+  return out;
+}
+function match(q, text) {   // substring beats in-order letters; 0 = no match
+  const t = text.toLowerCase(); if (!q) return 1;
+  const at = t.indexOf(q); if (at >= 0) return at === 0 || t[at - 1] === ' ' ? 4 : 3;
+  let j = 0; for (const ch of t) if (ch === q[j]) j++;
+  return j === q.length ? 1 : 0;
+}
+function paintPalette() {
+  const q = $pin.value.trim().toLowerCase();
+  pal.items = commands().map((c, n) => ({ ...c, score: match(q, `${c.label} ${c.group}`), n })).filter((c) => c.score)
+    .sort((a, b) => b.score - a.score || a.n - b.n);
+  pal.i = Math.min(pal.i, Math.max(pal.items.length - 1, 0));
+  $plist.replaceChildren(...(pal.items.length ? pal.items.map((c, n) => h('li', { role: 'option', id: `pal-${n}`, 'aria-selected': n === pal.i ? 'true' : 'false',
+    on: { click: () => runCommand(n), mousemove: () => { if (pal.i !== n) { pal.i = n; paintPalette(); } } } },
+    h('span', { class: 'pal-label' }, c.label), h('span', { class: 'pal-group' }, c.group), c.hint ? kbd(c.hint) : null))
+    : [h('li', { class: 'pal-empty', role: 'presentation' }, 'No matching command')]));
+  if (pal.items.length) { $pin.setAttribute('aria-activedescendant', `pal-${pal.i}`); document.getElementById(`pal-${pal.i}`).scrollIntoView({ block: 'nearest' }); }
+  else $pin.removeAttribute('aria-activedescendant');
+}
+function openPalette() {
+  if ($pal.open) return;
+  pal.back = document.activeElement; pal.i = 0; $pin.value = '';
+  paintPalette(); $pal.showModal(); $pin.focus();
+  api('GET', '/api/inbox').then((x) => { pal.cases = x.candidates.filter((c) => c.status === 'promoted' && c.case_id); if ($pal.open) paintPalette(); }).catch(() => {});
+}
+function runCommand(n) { const c = pal.items[n]; $pal.close(); if (c) c.run(); }
+$pal.addEventListener('close', () => { const b = pal.back; pal.back = null;
+  if (b && b.isConnected && b !== document.body && document.activeElement !== b) b.focus({ preventScroll: true }); refreshBar(); });
+$pal.addEventListener('click', (e) => { if (e.target === $pal) $pal.close(); });   // click on the backdrop
+$pin.addEventListener('input', () => { pal.i = 0; paintPalette(); });
+$pin.addEventListener('keydown', (e) => {
+  const n = pal.items.length;
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); if (n) { pal.i = (pal.i + (e.key === 'ArrowDown' ? 1 : n - 1)) % n; paintPalette(); } }
+  else if (e.key === 'Enter') { e.preventDefault(); if (n) runCommand(pal.i); }
+});
+
 let gPending = false;
 function onKey(e) {
-  const t = e.target, typing = t.matches && t.matches('input[type=text], textarea, select, [contenteditable]');
-  const click = (id) => { const el = document.getElementById(id); if (el && !el.disabled && el.offsetParent !== null) { e.preventDefault(); el.click(); return true; } return false; };
-  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { click('lock') || click('submit') || click('promote') || click('save-source'); return; }
-  if (e.key === 'Escape') { if (typing) return t.blur(); if (document.body.classList.contains('focus') || location.hash.startsWith('#inbox/')) { location.hash = location.hash.startsWith('#inbox/') ? '#inbox' : '#today'; } return; }
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); return $pal.open ? $pal.close() : openPalette(); }
+  if ($pal.open) return;   // the palette handles its own keys; Esc closes it natively
+  document.body.classList.add('kbd');
+  const t = e.target, typing = isTyping(t);
+  const click = (id) => { const el = live(id); if (el) { e.preventDefault(); el.click(); return true; } return false; };
+  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { PRIMARY.some(([id]) => click(id)); return; }
+  if (e.key === 'Escape') { if (typing) return t.blur(); const to = escTarget(); if (to) location.hash = to[0]; return; }
   if (typing || e.metaKey || e.ctrlKey || e.altKey) return;
   const k = e.key.toLowerCase();
   if (gPending) { gPending = false; const to = { t: 'today', c: 'case', p: 'progress', i: 'inbox' }[k]; if (to) { location.hash = `#${to}`; e.preventDefault(); } return; }
   if (k === 'g') { gPending = true; setTimeout(() => { gPending = false; }, 1200); return; }
-  const view = (location.hash.slice(1) || 'today').split('/')[0];
-  if (e.key === 'Enter' && t === document.body) { click('start') || click('next') || click('back-today'); return; }
-  if (view === 'today' && k === 'l') { location.hash = '#progress/log'; return; }
+  const view = currentView();
+  // Enter acts only when no control has focus (a focused button or link handles Enter natively)
+  if (e.key === 'Enter' && (t === document.body || t.getAttribute('tabindex') === '-1')) { click('start') || click('next') || click('back-today'); return; }
+  if ((view === 'today' || (view === 'case' && S.phase === 'done')) && k === 'l') { location.hash = '#progress/log'; return; }
+  if (view === 'inbox' && k === 'e') return void click('open-editor');
   if (view !== 'case') return;
   if (S.phase === 'answer') {
     if (k === 'h') return void click('hint-btn');
@@ -762,14 +942,19 @@ function onKey(e) {
 
 async function render() {
   const parts = (location.hash.slice(1) || 'today').split('/');
-  document.querySelectorAll('.nav a').forEach((a) => a.classList.toggle('active', a.dataset.view === parts[0]));
-  if (parts[0] !== 'case') setFocus(false);
+  document.querySelectorAll('.nav a').forEach((a) => { const on = a.dataset.view === parts[0]; a.classList.toggle('active', on); if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+  if (parts[0] !== 'case') { setFocus(false); document.body.classList.remove('deep-focus'); }
   clearInterval(timer);
   try {
     await ({ today: viewToday, case: viewCase, progress: viewProgress, inbox: viewInbox }[parts[0]] || viewToday)(parts);
   } catch (e) { show(h('p', { class: 'error', role: 'alert' }, e.message)); }
+  refreshBar();
 }
 shell();
 window.addEventListener('hashchange', render);
 document.addEventListener('keydown', onKey);
+document.addEventListener('pointerdown', () => document.body.classList.remove('kbd'));
+document.addEventListener('focusin', refreshBar);
+document.addEventListener('focusout', refreshBar);
+new MutationObserver(refreshBar).observe($main, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden', 'disabled'] });
 render();
