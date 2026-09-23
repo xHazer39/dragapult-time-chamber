@@ -2,32 +2,29 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#07080d">
   <title>Dragapult Time Chamber</title>
   <link rel="stylesheet" href="/app.css">
 </head>
 <body>
-  <div class="app">
-    <aside class="sidebar" aria-label="Navigation">
-      <div class="brand">
-        <span class="mark" id="mark"></span>
-        <span class="hide-rail">Time Chamber</span>
-        <span class="spacer hide-rail"></span>
-        <button class="icon hide-rail" id="collapse" title="Collapse sidebar" aria-label="Collapse sidebar"></button>
-      </div>
-      <nav class="nav">
-        <a href="#today" data-view="today" title="Today · G T"><span data-icon="today"></span><span class="hide-rail">Today</span><span class="count hide-rail" id="count-today"></span></a>
-        <a href="#case" data-view="case" title="Case · G C"><span data-icon="case"></span><span class="hide-rail">Case</span></a>
-        <a href="#progress" data-view="progress" title="Progress · G P"><span data-icon="progress"></span><span class="hide-rail">Progress</span></a>
-        <a href="#inbox" data-view="inbox" title="Inbox · G I"><span data-icon="inbox"></span><span class="hide-rail">Inbox</span><span class="count hide-rail" id="count-inbox"></span></a>
-      </nav>
-      <div class="grow"></div>
-      <div class="deck-chip hide-rail" id="deck-chip"></div>
-    </aside>
-    <div class="content">
-      <main id="main" class="page" aria-live="polite"></main>
+  <header class="hud">
+    <a class="brand capsule" href="#today" aria-label="Time Chamber · Today">
+      <span class="mark" id="mark"></span>
+      <span class="brand-name"><b>Time Chamber</b><small>Dragapult ex</small></span>
+    </a>
+    <nav class="nav capsule" aria-label="Sections">
+      <a href="#today" data-view="today" title="Today · G T"><span data-icon="today"></span><span class="nav-label">Today</span><span class="count" id="count-today"></span></a>
+      <a href="#case" data-view="case" title="Case · G C"><span data-icon="case"></span><span class="nav-label">Case</span></a>
+      <a href="#progress" data-view="progress" title="Progress · G P"><span data-icon="progress"></span><span class="nav-label">Progress</span></a>
+      <a href="#inbox" data-view="inbox" title="Inbox · G I"><span data-icon="inbox"></span><span class="nav-label">Inbox</span><span class="count" id="count-inbox"></span></a>
+    </nav>
+    <div class="hud-end">
+      <div class="deck-chip capsule" id="deck-chip"></div>
+      <button class="icon capsule" id="collapse" title="Compact navigation" aria-label="Compact navigation"></button>
     </div>
-  </div>
+  </header>
+  <main id="main" class="page" aria-live="polite"></main>
   <script src="/app.js"></script>
 </body>
 </html>

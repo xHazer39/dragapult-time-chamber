@@ -94,6 +94,23 @@ function empty(ic, title, text, action) {
   return h('div', { class: 'empty' }, h('div', { class: 'ring' }, icon(ic)), h('h2', {}, title), h('p', {}, text), action || null);
 }
 
+// Today's chamber: one arc per planned rep around a core. Decorative only, the number is in the copy.
+function orbit(n, core) {
+  const NS = 'http://www.w3.org/2000/svg', svg = document.createElementNS(NS, 'svg');
+  const el = (tag, attrs) => { const e = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v); return e; };
+  svg.setAttribute('viewBox', '0 0 200 200'); svg.setAttribute('aria-hidden', 'true');
+  const R = 88, C = 2 * Math.PI * R, gap = n > 1 ? 7 : 0, len = n ? C / n - gap : 0;
+  svg.append(el('circle', { class: 'track', cx: 100, cy: 100, r: R, 'stroke-width': 6 }));
+  const segs = el('g', { transform: 'rotate(-90 100 100)' });
+  for (let i = 0; i < n; i++) segs.append(el('circle', { class: 'seg', cx: 100, cy: 100, r: R, 'stroke-width': 6,
+    'stroke-dasharray': `${len} ${C - len}`, 'stroke-dashoffset': -i * (len + gap) }));
+  const spin = el('g', { class: 'spin' }), spin2 = el('g', { class: 'spin rev' });
+  spin.append(el('circle', { class: 'dash', cx: 100, cy: 100, r: 72, 'stroke-width': 1.5 }));
+  spin2.append(el('circle', { class: 'dash', cx: 100, cy: 100, r: 100, 'stroke-width': 1 }));
+  svg.append(segs, spin, spin2);
+  return h('div', { class: 'orbit' }, svg, h('div', { class: 'core' }, icon(core, 30)));
+}
+
 // API status strings → one indicator. Filled = observed signal, hollow = missing evidence.
 function statusView(text, label) {
   const t = text || '';
@@ -116,36 +133,34 @@ async function viewToday() {
   // Today says how much to train, never what it targets: "exploit ×3" or a leak reason read
   // before the decision is priming. Mode and reason appear after the reveal, leaks in Progress.
   const logReal = () => { location.hash = '#progress/log'; };
-  let hero;
-  if (t.play.play) {
-    hero = h('section', { class: 'card xl hero', id: 'real-evidence' },
-      h('div', { class: 'stack' }, h('div', { class: 'overline', style: 'color:var(--accent-text)' }, 'Highest-value training now'),
-        h('div', { class: 'row' }, icon('flag', 18), h('div', { class: 'title' }, 'Go play competitive matches')),
-        h('p', { class: 'secondary', style: 'margin:0;max-width:640px' }, t.play.reason)),
-      h('div', { class: 'cta' }, btn('Log real match', { cls: 'primary', ic: 'flag', key: 'L', on: logReal }),
-        t.reps ? btn(`Train anyway · ${t.reps} reps`, { id: 'start', cls: 'ghost', on: startSession }) : null, box));
-  } else {
-    hero = h('section', { class: 'card xl hero' },
-      h('div', { class: 'stack' }, h('div', { class: 'overline', style: 'color:var(--accent-text)' }, 'Highest-value training now'),
-        t.reps ? h('div', { class: 'row', id: 'plan', style: 'align-items:baseline;gap:12px' }, h('span', { class: 'metric' }, `${t.reps} reps`),
-          h('span', { class: 'small secondary' }, 'plan fixed when you start'))
-          : h('p', { class: 'secondary', style: 'margin:0' }, 'Nothing worth drilling right now.'),
-        h('div', { class: 'row caption' }, icon('lock', 14), 'What each rep targets stays hidden until you answer, so every rep also tests recognition.')),
-      h('div', { class: 'cta' }, btn('Start session', { id: 'start', cls: `primary lg${t.reps ? ' glow' : ''}`, ic: 'play', key: '↵', on: startSession, disabled: !t.reps }), box));
-  }
+  const cta = h('div', { class: 'cta' },
+    t.play.play ? [btn('Log real match', { cls: 'primary lg glow', ic: 'flag', key: 'L', on: logReal }),
+      t.reps ? btn(`Train anyway · ${t.reps} reps`, { id: 'start', cls: 'ghost', on: startSession }) : null]
+      : [btn('Start session', { id: 'start', cls: `primary lg${t.reps ? ' glow' : ''}`, ic: 'play', key: '↵', on: startSession, disabled: !t.reps }),
+        btn('Log real match', { cls: 'ghost', ic: 'flag', key: 'L', on: logReal })]);
+  const hero = h('section', { class: `well today-well${t.reps || t.play.play ? '' : ' is-dim'}`, id: t.play.play ? 'real-evidence' : null },
+    h('div', { class: 'copy' },
+      h('div', { class: 'overline' }, 'Highest-value training now'),
+      t.play.play ? [h('h1', { class: 'row', style: 'gap:12px' }, icon('flag', 26), 'Go play competitive matches'), h('p', { class: 'lede' }, t.play.reason)]
+        : t.reps ? h('div', { class: 'big-reps', id: 'plan' }, h('span', { class: 'n' }, String(t.reps)), h('span', { class: 'u' }, 'reps'),
+          h('span', { class: 'note' }, 'plan fixed when you start'))
+          : h('p', { class: 'lede' }, 'Nothing worth drilling right now.'),
+      t.play.play ? null : h('div', { class: 'row caption' }, icon('lock', 14), 'What each rep targets stays hidden until you answer, so every rep also tests recognition.'),
+      cta, box),
+    orbit(t.play.play ? 0 : t.reps, t.play.play ? 'flag' : 'play'));
   const realOk = !t.play.reason.startsWith('No real-match');
   const older = t.deck.cases_for_older_versions;
   show(
-    head(today(), 'Today', t.play.play ? null : btn('Log real match', { cls: '', ic: 'flag', key: 'L', on: logReal })),
+    head(today(), 'Today'),
     hero,
-    h('div', { class: 'grid3' },
-      h('section', { class: 'card' }, h('div', { class: 'overline' }, 'Training load'),
-        h('div', { class: 'row', style: 'align-items:baseline' }, h('span', { class: 'metric-sm' }, String(t.due_count)), h('span', { class: 'small secondary' }, 'concepts with memory due')),
+    h('div', { class: 'strip' },
+      h('section', {}, h('div', { class: 'overline' }, 'Training load'),
+        h('div', { class: 'figure' }, h('span', { class: 'metric' }, String(t.due_count)), h('span', { class: 'small secondary' }, 'concepts with memory due')),
         h('div', { class: 'caption' }, 'FSRS schedules recall of concepts. It is not a skill score.')),
-      h('section', { class: 'card', id: t.play.play ? null : 'real-evidence' }, h('div', { class: 'overline' }, 'Real-match evidence'),
+      h('section', { id: t.play.play ? null : 'real-evidence' }, h('div', { class: 'overline' }, 'Real-match evidence'),
         statusView(realOk ? 'no current' : 'transfers in drills', realOk ? 'Real-match evidence logged recently' : 'Needs real-game evidence'),
         h('div', { class: 'caption' }, t.play.reason)),
-      h('section', { class: 'card' }, h('div', { class: 'overline' }, 'Deck version'),
+      h('section', {}, h('div', { class: 'overline' }, 'Deck version'),
         h('div', { class: 'row' }, icon('layers'), h('span', { class: 'mono' }, t.deck.label)),
         older ? statusView('known', `${older} case(s) written for an older deck version · check before trusting`)
           : statusView('no current', 'All active cases match this version'))));
@@ -180,7 +195,7 @@ function caseMeta(c) {
 }
 
 function positionPanel(c) {
-  return h('section', { class: 'card position', style: 'padding:20px 24px;gap:14px' },
+  return h('section', { class: 'card position', style: 'padding:22px 26px;gap:16px' },
     h('div', { class: 'overline' }, 'Position · what you could know'),
     h('pre', { id: 'position' }, c.observed_state),
     c.unknown_fields.length ? h('div', { class: 'stack', style: 'gap:8px' }, h('div', { class: 'caption' }, 'Unknown to you'),
@@ -199,11 +214,12 @@ async function viewCase(parts = []) {
     'Cases open from a session so the scheduler can mix exploit, coverage and probe reps. Start one from Today, or practise a promoted case from the Inbox.',
     h('a', { class: 'btn primary', href: '#today' }, 'Go to Today', kbd('G T')))));
   const c = S.case;
+  window.scrollTo(0, 0);   // every phase change starts at its focal object: the prompt, then the verdict
   if (S.phase === 'reveal') return show(focusBar(), revealView(S.reveal));
   const side = S.phase === 'plan' ? planForm(c) : answerForm(c);
-  show(focusBar(), caseMeta(c),
+  show(focusBar(), h('div', { class: 'case-head' }, caseMeta(c), h('h1', { class: 'prompt', id: 'prompt' }, c.prompt)),
     S.retry ? h('div', { class: 'banner dashed' }, icon('clock', 14), `Retry of this case · counts as a seen (L0) attempt · never updates memory · stays out of repeat-error counts`) : null,
-    h('div', { class: 'case-grid' }, positionPanel(c), h('div', { class: 'stack', style: 'gap:16px' }, h('h2', { class: 'title', id: 'prompt' }, c.prompt), side)));
+    h('div', { class: 'case-grid' }, positionPanel(c), h('div', { class: 'decision' }, side)));
   if (S.phase === 'answer') startTimer();
 }
 
@@ -245,8 +261,9 @@ function answerForm(c) {
     c.choices.length ? h('div', { class: 'stack', style: 'gap:8px', role: 'radiogroup' }, c.choices.map((x) => h('label', { class: 'choice-row' },
       h('input', { type: 'radio', name: 'choice', value: x.key }), h('span', {}, `${x.key}.  ${x.text}`), kbd(x.key)))) : null,
     c.completeness !== 'EXHAUSTIVE' ? h('div', { class: 'row caption' }, icon('info', 14), `Choices are ${c.completeness}: your line may not be listed. Describe it below (not graded).`) : null,
-    field(c.choices.length ? 'Other line · optional' : 'Your line', h('textarea', { id: 'other', placeholder: 'Describe a line that is not listed' })),
-    field('Reasoning · optional', h('input', { type: 'text', id: 'reasoning' })),
+    h('div', { class: 'form-grid answer-extra' },
+      field(c.choices.length ? 'Other line · optional' : 'Your line', h('textarea', { id: 'other', placeholder: 'Describe a line that is not listed' })),
+      field('Reasoning · optional', h('textarea', { id: 'reasoning', rows: 2 }))),
     h('div', { class: 'row' }, btn('Submit decision', { id: 'submit', cls: 'primary', key: '⌘↵', on: submit }),
       btn('Hint · caps memory at Hard', { id: 'hint-btn', cls: 'ghost', key: 'H', on: useHint })),
     hint, box);
@@ -272,12 +289,12 @@ function revealView(r) {
   const tally = (key) => c.evidence.filter((x) => x.choice === key && x.verdict);
   const best = (key) => { const t = tally(key).filter((x) => GRADING.includes(x.level)); return t.length && t.every((x) => x.verdict === 'good'); };
   return h('div', { class: 'stack', style: 'gap:20px' },
-    h('section', { class: 'card outcome', id: 'reveal', style: 'padding:20px 24px' },
+    h('section', { class: `well outcome${r.graded ? '' : ' is-dim'}`, id: 'reveal' },
       h('div', { class: 'stack', style: 'gap:6px' }, h('div', { class: 'overline' }, 'Your line'),
         h('div', { class: 'title' }, chosen ? `${chosen.key}.  ${chosen.text}` : `Other line: ${a.other_text}`),
         h('span', { class: 'small secondary tabular' }, metaLine),
         r.item ? h('span', { class: 'caption' }, `Why this rep: ${r.item.mode} · ${r.item.reason}`) : null),
-      h('div', { class: 'stack', style: 'gap:8px' }, h('div', { class: 'overline' }, 'Outcome'), verdict(r),
+      h('div', { class: 'stack verdict-col', style: 'gap:12px' }, h('div', { class: 'overline' }, 'Outcome'), verdict(r),
         r.disputes.length ? h('div', { id: 'disputes', class: 'row small warn' }, icon('alert', 14), `Evidence disagrees on choice ${r.disputes.join(', ')} — kept, not resolved.`) : null)),
     h('div', { class: 'review-grid' },
       h('div', { class: 'stack', style: 'gap:24px' },
@@ -303,7 +320,7 @@ function revealView(r) {
           h('span', { class: 'caption' }, `Choice list ${c.completeness} · reconstruction ${c.reconstruction}${c.synthetic ? ' · synthetic demo position' : ''}${c.full_record ? '' : ' · no hindsight record for this case'}`)),
         c.full_record ? h('section', { class: 'stack' }, h('h2', {}, 'Full record · hindsight, shown only after you answer'), h('pre', { class: 'excerpt' }, c.full_record)) : null,
         evidenceForm(c, r.evidence_levels)),
-      h('section', { class: 'card', style: 'padding:20px;gap:20px' },
+      h('section', { class: 'card review-panel', style: 'padding:22px;gap:20px' },
         h('div', { class: 'row overline', style: 'color:var(--accent-text)' }, icon('today', 14), 'Now revealed · what this rep trained'),
         reviewForm(r), coachBox(r))));
 }
@@ -396,7 +413,7 @@ function readEvidence(p) {
 function sessionComplete() {
   const graded = S.log.filter((x) => x.graded), ok = graded.filter((x) => x.correct).length;
   const stat = (n, l, cls) => h('div', { class: 'stack', style: 'gap:2px;align-items:center' }, h('span', { class: `metric-sm ${cls}` }, String(n)), h('span', { class: 'caption' }, l));
-  return h('section', { class: 'card xl complete' }, h('div', { class: 'check-ring' }, icon('check')), h('h2', { class: 'title' }, 'Session complete'),
+  return h('section', { class: 'well complete' }, h('div', { class: 'check-ring' }, icon('check')), h('h2', { class: 'title' }, 'Session complete'),
     h('span', { class: 'small secondary tabular' }, `${S.reps} reps planned · ${S.log.length} reviewed in this browser session`),
     h('div', { class: 'row', style: 'gap:28px;justify-content:center' }, stat(ok, 'ok · graded', 'ok'), stat(graded.length - ok, 'errors · graded', 'bad'),
       stat(S.log.length - graded.length, 'ungraded', 'secondary')),
@@ -457,7 +474,7 @@ async function viewProgress(parts = []) {
       h('span', {}, h('span', { class: 'dot s' }), 'Self-reported: weak evidence, never certifies transfer'),
       h('span', {}, h('span', { class: 'dot i' }), 'Insufficient: below minimum sample'),
       h('span', {}, h('span', { class: 'dot m' }), 'Memory (FSRS): recall of a concept, not performance')),
-    h('div', { class: 'grid3' },
+    h('div', { class: 'strip' },
       kpi('Repeat error rate', rep.errors, rep.later, 'later opportunities repeated an earlier error', 'verified later opportunities', th.later, null, 'Verified repeats after a first verified error'),
       kpi('Unseen transfer', T.unseen.ok, T.unseen.ok + T.unseen.error, 'unseen positions ok', 'verified unseen results', th.unseen,
         self('unseen') ? `+ ${T.unseen.self_ok}/${self('unseen')} self-reported ok · not counted` : null, 'Graded by FACT / COACH_GOLD / CONSENSUS'),
@@ -569,8 +586,8 @@ async function viewInbox(parts) {
     h('div', { class: 'stack', style: 'gap:0' }, h('span', { class: 'small' }, label), h('span', { class: 'caption' }, note)));
   const nothing = !inbox.sources.length && !inbox.candidates.length;
   show(head('Nothing here is judged automatically', 'Inbox'),
-    h('div', { class: 'pipeline' }, stage(inbox.sources.length, 'Raw sources', 'immutable · hashed'), icon('arrow'),
-      stage(drafts.length, 'Candidates', 'untrusted drafts · you validate', drafts.length > 0), icon('arrow'),
+    h('div', { class: 'pipeline' }, stage(inbox.sources.length, 'Raw sources', 'immutable · hashed'), h('i', { class: 'wire', 'aria-hidden': 'true' }),
+      stage(drafts.length, 'Candidates', 'untrusted drafts · you validate', drafts.length > 0), h('i', { class: 'wire', 'aria-hidden': 'true' }),
       stage(promoted.length, 'Promoted to cases', 'validated · schedulable')),
     h('div', { class: 'inbox-grid' },
       nothing ? h('section', { class: 'card' }, empty('inbox', 'Nothing in the Inbox yet', 'Paste a PTCG Live battle log after your next match, or add a pro match, coach note, external link or manual spot in the panel.'))
@@ -700,7 +717,7 @@ function setFocus(on) { document.body.classList.toggle('focus', !!on); }
 function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch { return null; } return null; }
 
 function shell() {
-  document.getElementById('mark').append(icon('clock', 14));
+  document.getElementById('mark').append(icon('clock', 16));
   document.getElementById('collapse').append(icon('sidebar'));
   document.querySelectorAll('[data-icon]').forEach((el) => el.replaceWith(icon(el.dataset.icon)));
   document.getElementById('collapse').addEventListener('click', () => { document.body.classList.toggle('rail'); store('rail', document.body.classList.contains('rail') ? '1' : '0'); });
